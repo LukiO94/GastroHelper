@@ -1,0 +1,4600 @@
+import java.awt.Font;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Scanner;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+
+
+public class Okno extends JFrame implements MouseListener {
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private JButton bNoweZamowienie, bHistoriaZamowien, bMagazyn, bStatystyka, bZamknijApke, bZaladujDane, bZalaNiestDane, bZakonczDzien;
+	private JLabel lOpis, lZysk, lRights, lLogo, bg;
+	private JTextArea taZam[] = new JTextArea[5];
+	private JScrollPane spScrolls[] = new JScrollPane[5];
+	private JButton bZamT[] = new JButton[5];
+	private double zysk = 0.0;
+	private Zamow zam = new Zamow(this);
+	private Magazyn mag = new Magazyn(this);
+	private HistoriaZamowien his = new HistoriaZamowien(this);
+	private Statystyka stat = new Statystyka(this);
+	private double cenaZam[] = new double [5];
+	private boolean dostawa[] = new boolean [5];
+	
+	Runnable runner;
+	Thread thread;
+	
+	public Okno(){
+				
+		setSize(1280,800);
+		setTitle("OzdApp");
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setLayout(null);	
+		setExtendedState(JFrame.MAXIMIZED_BOTH);
+		setUndecorated(true);
+		
+		
+		
+		//Watek z backupem
+
+		runner = new WatekBackup();
+		thread = new Thread(runner);
+		thread.start();
+		/////////////////////////////////
+		/////////////////////////////////EKRAN STARTOWY
+		lLogo=new JLabel(new ImageIcon("grafika/logo2.jpg"));
+		lLogo.setBounds(340,20,600,330);
+		lLogo.setOpaque(true);
+		add(lLogo);
+		
+		ImageIcon zaldane = new ImageIcon("grafika/bZaladujDane.jpg");
+		bZaladujDane = new JButton(zaldane);
+		bZaladujDane.setBounds(390, 356, 500, 166);
+		add(bZaladujDane);
+		bZaladujDane.addMouseListener(this);
+		
+		ImageIcon zalniestdane = new ImageIcon("grafika/bZalaNiestDane.jpg");
+		bZalaNiestDane = new JButton(zalniestdane);
+		bZalaNiestDane.setBounds(390, 542, 500, 166);
+		add(bZalaNiestDane);
+		bZalaNiestDane.addMouseListener(this);
+		
+		lRights = new JLabel("Copyright © 2016 Łukasz Ozdarski. All rights reserved.");
+		lRights.setBounds(440 ,760, 400, 40);
+		lRights.setForeground(new java.awt.Color(250, 250, 250));
+		lRights.setFont(new Font("System", Font.CENTER_BASELINE, 15));
+		add(lRights);
+		
+		///////////////////////////////////////////////////
+		///////////////////////////////////////////////////MENU GLOWNE
+		ImageIcon noweZam = new ImageIcon("grafika/bNoweZamowienie.jpg");
+		bNoweZamowienie = new JButton(noweZam);
+		bNoweZamowienie.setBounds(70, 20, 500, 166);
+		add(bNoweZamowienie);
+		bNoweZamowienie.addMouseListener(this);
+		
+		ImageIcon hisZam = new ImageIcon("grafika/bHistoriaZamowien.jpg");
+		bHistoriaZamowien = new JButton(hisZam);	//button Historia zamowien
+		bHistoriaZamowien.setBounds(70, 206, 500, 166);
+		add(bHistoriaZamowien);
+		bHistoriaZamowien.addMouseListener(this);
+		
+		ImageIcon skladniki = new ImageIcon("grafika/bMagazyn.jpg");
+		bMagazyn = new JButton(skladniki);	//button Magazyn
+		bMagazyn.setBounds(70, 392, 500, 166);
+		add(bMagazyn);
+		bMagazyn.addMouseListener(this);
+		
+		ImageIcon stat = new ImageIcon("grafika/bStatystyka.jpg");
+		bStatystyka = new JButton(stat);	//button Magazyn
+		bStatystyka.setBounds(70, 578, 500, 166);
+		add(bStatystyka);
+		bStatystyka.addMouseListener(this);
+		
+		ImageIcon zianknonc = new ImageIcon("grafika/bZamknijApke.jpg");
+		bZamknijApke = new JButton(zianknonc);	//button Zamknij
+		bZamknijApke.setBounds(1220, 0, 60, 60);
+		add(bZamknijApke);
+		bZamknijApke.addMouseListener(this);
+		
+		ImageIcon zakoncz = new ImageIcon("grafika/bZakonczDzien.jpg");
+		bZakonczDzien = new JButton(zakoncz);	//button Zamknij
+		bZakonczDzien.setBounds(1060, 0, 150, 60);
+		add(bZakonczDzien);
+		bZakonczDzien.addMouseListener(this);
+		
+		lOpis = new JLabel("Biezace zamówienia");	//tytuł Biezace zamowienia
+		lOpis.setBounds(700, 0, 380, 50);
+		lOpis.setForeground(new java.awt.Color(250, 250, 250));
+		lOpis.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		add(lOpis);
+		
+		lZysk = new JLabel("0.0 zł");	//tytuł Biezace zamowienia
+		lZysk.setBounds(580, 0, 120, 50);
+		lZysk.setForeground(new java.awt.Color(250, 250, 250));
+		lZysk.setFont(new Font("Amatic SC", Font.CENTER_BASELINE, 40));
+		add(lZysk);
+		
+		ImageIcon zatwierdz = new ImageIcon("grafika/bZatwierdz.jpg");
+		for (int i=0;i<5;i++){
+			taZam[i] = new JTextArea("");	//text area z zamowieniem
+			taZam[i].setEditable(false);
+			spScrolls[i] = new JScrollPane(taZam[i]);
+			spScrolls[i].setBounds(700, 65+(i*140), 360, 120);
+			taZam[i].setBackground(new java.awt.Color(250, 250, 250));
+			taZam[i].setForeground(new java.awt.Color(5, 5, 5));
+			add(spScrolls[i]);
+			
+			bZamT[i] = new JButton(zatwierdz);	//buttony zatwierdzajace
+			bZamT[i].setBounds(1100, 90+(i*140), 60, 60);
+			add(bZamT[i]);
+			bZamT[i].addMouseListener(this);
+			
+			dostawa[i]=false;
+		}
+		
+		
+		bg=new JLabel(new ImageIcon("grafika/tlo.jpg"));
+		bg.setBounds(0,0,1280,800);
+		bg.setOpaque(true);
+		add(bg);
+		
+		pokazStartowy(true);
+		pokazMenu(false);
+		
+	}
+	
+	public void pokazMenu(boolean x){
+		bNoweZamowienie.setVisible(x);
+		bHistoriaZamowien.setVisible(x);
+		bMagazyn.setVisible(x);
+		bStatystyka.setVisible(x);
+		lOpis.setVisible(x);
+		lZysk.setVisible(x);
+		bZakonczDzien.setVisible(x);
+		for (int i=0;i<5;i++) {spScrolls[i].setVisible(x); bZamT[i].setVisible(x);}
+	}
+	
+	public void pokazStartowy(boolean x){
+		bZaladujDane.setVisible(x);
+		bZalaNiestDane.setVisible(x);
+		lRights.setVisible(x);
+		lLogo.setVisible(x);
+	}		
+
+	public void zapiszStatystyke(String nazwa){
+		
+		String naz = "Statystyka/DaneStat" + nazwa + ".txt"; //tworzenie nazwy pliku tekstowego
+		
+		ArrayList<String> linie = new ArrayList<String>(); //lista zapisująca istniejące juz linie
+		//odczyt i zapis do listy istniejących już linii
+		try {
+            @SuppressWarnings("resource")
+			BufferedReader br = new BufferedReader(new FileReader(naz));
+            String linia = null;
+            
+            while ((linia = br.readLine()) != null) {
+                linie.add(linia);
+            }
+        } catch (Exception e1) {
+            System.err.println("Wystapil blad przy wczytywaniu danych");
+            e1.printStackTrace();
+        }	
+		// koniec odczytu i zapisu do listy istniejących już linii
+		
+		//zapisywanie linii z listy i dodanie kolejnej, z dzisiejszego zamkniecia
+		PrintWriter zapisac;
+		try {
+			zapisac = new PrintWriter(naz);
+			
+			for (int i=0;i<linie.size();i++) {
+				//if (!(linie.get(i).equals(""))) 
+					zapisac.println(linie.get(i));
+			}
+			
+			Date currentDate = new Date();
+			SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+			String dateString = dateFormat.format(currentDate);
+			String daneStat = dateString;
+			
+			if (nazwa.equals("Spozywcze")){
+				for (int i=0;i<mag.getIloscSpozywczych();i++){
+					String dana = " " + String.valueOf(mag.zaokragl(mag.getZuzyteSpozywcze(i)));
+					daneStat+=dana;
+				}
+			}
+			else if (nazwa.equals("Gospodarcze")){
+				for (int i=0;i<mag.getIloscGospodarczych();i++){
+					String dana = " " + String.valueOf(mag.zaokragl(mag.getZuzyteGospodarcze(i)));
+					daneStat+=dana;
+				}
+			}
+			else if (nazwa.equals("Sosy")){
+				for (int i=0;i<mag.getIloscSosow();i++){
+					String dana = " " + String.valueOf(mag.zaokragl(mag.getZuzyteSosy(i)));
+					daneStat+=dana;
+				}
+			}
+			else if (nazwa.equals("Napoje")){
+				for (int i=0;i<mag.getIloscNapoi();i++){
+					String dana = " " + String.valueOf(mag.getZuzyteNapoje(i));
+					daneStat+=dana;
+				}
+			}
+			else if (nazwa.equals("Potrawy")){
+				for (int i=0;i<mag.getIloscPotraw();i++){
+					String dana = " " + String.valueOf(mag.getSprzedanePotrawy(i));
+					daneStat+=dana;
+				}
+			}
+			else if(nazwa.equals("Obrot"))
+			daneStat += " " + String.valueOf(mag.zaokragl(zysk));
+			
+			zapisac.println(daneStat);
+			zapisac.close();
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		}
+		
+	}
+	
+	
+	
+	public static void main(String[] args){
+		
+		Okno aplikacja = new Okno();
+		aplikacja.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		aplikacja.setVisible(true);	
+		
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		
+		
+	}
+	
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		Object zr = e.getSource();
+		if (zr==bZaladujDane){							// laduje dane ostatnio zamkniete(tylko stan magazynu)
+			
+			Calendar expirence = Calendar.getInstance();
+			expirence.set(2016, 11, 11, 12, 0, 0); //2016.11.28 12:00:00
+			
+			Calendar current = Calendar.getInstance();
+	
+			if (current.before(expirence))
+			{			
+				File file = new File("stWejsciowe/init.txt");
+			    Scanner in = null;
+				try {
+					in = new Scanner(file);
+				} catch (FileNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			 
+			    String zdanie = in.nextLine();
+			    int i=0;
+				for (String wart : zdanie.split(" ")){
+					mag.setSpozywczy(Double.parseDouble(wart), i);
+					i++;
+				}
+				i=0;
+				zdanie = in.nextLine();
+				for (String wart : zdanie.split(" ")){
+					mag.setGospodarczy(Double.parseDouble(wart), i);
+					i++;
+				}
+				i=0;
+				zdanie = in.nextLine();
+				for (String wart : zdanie.split(" ")){
+					mag.setSos(Double.parseDouble(wart), i);
+					i++;
+				}		
+				i=0;
+				zdanie = in.nextLine();
+				for (String wart : zdanie.split(" ")){
+					mag.setNapoj(Integer.parseInt(wart), i);
+					i++;
+				}
+				mag.ustawSkladniki();
+				((WatekBackup) runner).setMag(mag);
+				((WatekBackup) runner).setHisZam(his);
+				pokazStartowy(false);
+				pokazMenu(true);
+			}
+			else JOptionPane.showMessageDialog(null, "Twoja licencja wygasła!\nSkontaktuj się z naszym przedstawicielem.");
+		}
+		else if (zr==bZalaNiestDane){					//laduje dane z wybranego backupa(stan magazynu, historie zamowien i zysk)
+			
+			Calendar expirence = Calendar.getInstance();
+			expirence.set(2016, 11, 11, 12, 0, 0); //2016.11.28 12:00:00
+			
+			Calendar current = Calendar.getInstance();
+	
+			if (current.before(expirence))
+			{		
+				
+				//filechooser
+				JFileChooser jFileChooser = new JFileChooser();
+				jFileChooser.setCurrentDirectory(new File("C://Users/Łukasz/Desktop/OzdApp/backup"));
+				
+				int result = jFileChooser.showOpenDialog(new JFrame());
+				
+				if (result == JFileChooser.APPROVE_OPTION) {
+					File selectedFile = jFileChooser.getSelectedFile();
+					
+				    Scanner in = null;
+					try {
+						in = new Scanner(selectedFile);
+					} catch (FileNotFoundException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				 
+				    String zdanie = in.nextLine();
+				    int i=0;
+					for (String wart : zdanie.split(" ")){
+						mag.setSpozywczy(Double.parseDouble(wart), i);
+						i++;
+					}
+					i=0;
+					zdanie = in.nextLine();
+					for (String wart : zdanie.split(" ")){
+						mag.setGospodarczy(Double.parseDouble(wart), i);
+						i++;
+					}
+					i=0;
+					zdanie = in.nextLine();
+					for (String wart : zdanie.split(" ")){
+						mag.setSos(Double.parseDouble(wart), i);
+						i++;
+					}		
+					i=0;
+					zdanie = in.nextLine();
+					for (String wart : zdanie.split(" ")){
+						mag.setNapoj(Integer.parseInt(wart), i);
+						i++;
+					}
+					i=0;
+					zdanie = in.nextLine();
+					for (String wart : zdanie.split(" ")){
+						mag.setZuzyteSpozywcze(Double.parseDouble(wart), i);
+						i++;
+					}
+					i=0;
+					zdanie = in.nextLine();
+					for (String wart : zdanie.split(" ")){
+						mag.setZuzyteGospodarcze(Double.parseDouble(wart), i);
+						i++;
+					}
+					i=0;
+					zdanie = in.nextLine();
+					for (String wart : zdanie.split(" ")){
+						mag.setZuzyteSosy(Double.parseDouble(wart), i);
+						i++;
+					}		
+					i=0;
+					zdanie = in.nextLine();
+					for (String wart : zdanie.split(" ")){
+						mag.setZuzyteNapoje(Integer.parseInt(wart), i);
+						i++;
+					}
+					i=0;
+					zdanie = in.nextLine();
+					for (String wart : zdanie.split(" ")){
+						mag.setSprzedanePotrawy(Integer.parseInt(wart), i);
+						his.setSprzedanePotrawy(Integer.parseInt(wart), i);
+						i++;
+					}
+					mag.ustawSkladniki();
+					//mag.ustawZuzyte();
+					
+					ArrayList<String> linie = new ArrayList<String>();
+					try {
+			            @SuppressWarnings("resource")
+						BufferedReader br = new BufferedReader(new FileReader(selectedFile));
+			            String linia = null;
+			            while ((linia = br.readLine()) != null) {
+			                linie.add(linia);
+			            }
+			        } catch (Exception e1) {
+			            System.err.println("Wystapil blad przy wczytywaniu danych");
+			            e1.printStackTrace();
+			        }
+			    
+					for (int j=9; j<linie.size()-1;j++){
+						his.setNotatnik(linie.get(j));
+					}
+					//koniec filechooser
+					double zyskBU = Double.parseDouble(linie.get(linie.size()-1).split(" ")[1]);
+					zysk=zyskBU;
+					his.setPokazZysk(zysk);
+					lZysk.setText(String.valueOf(zysk));
+					
+					((WatekBackup) runner).setMag(mag);
+					((WatekBackup) runner).setHisZam(his);
+					
+					pokazStartowy(false);
+					pokazMenu(true);
+				}			
+			}
+			else JOptionPane.showMessageDialog(null, "Twoja licencja wygasła!\nSkontaktuj się z naszym przedstawicielem.");			
+		}
+		
+		else if (zr==bNoweZamowienie) {	//akcja na klikniecie NoweZamowienie
+			zam.setIsOK(false);
+			
+			if (zam.getIloscZam()<5){
+				for (int i=0;i<8;i++) {
+					zam.setZamownienie(i, ""); 
+					zam.setCenaPojedynczegoLabel(i, "");
+				}
+				zam.setComment();
+				zam.setAdres();
+				zam.setTelefon();
+				zam.setCenaZam();
+				zam.setLabelCenaZam();
+				zam.setCenaPojedynczego();
+				zam.setVisible(true);
+			}
+			else JOptionPane.showMessageDialog(null, "Za dużo zamówień, aby dodać nowe zrealizuj poprzednie!", "Błąd!", JOptionPane.WARNING_MESSAGE);
+			
+		} 
+		
+		else if (zr==bHistoriaZamowien){		//historia zamowien			
+			zam.setIsOK(false);
+			his.setVisible(true);
+			
+		}
+		else if (zr==bMagazyn){		//magazyn
+			zam.setIsOK(false);
+			mag.setVisible(true);
+			
+		}
+		else if (zr==bStatystyka){
+			zam.setIsOK(false);
+			stat.setVisible(true);
+			
+		}
+		else if (zr==bZamknijApke){
+			zam.setIsOK(false);
+			
+			int odp = JOptionPane.showConfirmDialog(null, "Czy na pewno chcesz zamknąć program?\nNiezapisane dane zostaną utracone.", "UWAGA!", JOptionPane.YES_NO_OPTION);
+			
+			if (odp==JOptionPane.YES_OPTION) {
+				
+				//Zapisywanie danych init - wczytywanych zawsze przy rozpoczeciu
+				
+				PrintWriter zapis;
+				try {
+					zapis = new PrintWriter("stWejsciowe/init.txt");
+					for (int i=0;i<mag.getIloscSpozywczych();i++){
+						if(i==(mag.getIloscSpozywczych()-1)) zapis.print(mag.getSpozywczy(i));
+						else zapis.print(mag.getSpozywczy(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscGospodarczych();i++){
+						if(i==(mag.getIloscGospodarczych()-1)) zapis.print(mag.getGospodarczy(i));
+						else zapis.print(mag.getGospodarczy(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscSosow();i++){
+						if(i==(mag.getIloscSosow()-1)) zapis.print(mag.getSos(i));
+						else zapis.print(mag.getSos(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscNapoi();i++){
+						if(i==(mag.getIloscNapoi()-1)) zapis.print(mag.getNapoj(i));
+						else zapis.print(mag.getNapoj(i)+" ");
+					}
+					zapis.println("");
+					zapis.close();
+				} catch (FileNotFoundException e1) {
+					e1.printStackTrace();
+				}
+				
+				System.exit(0);
+			}
+		}
+		else if (zr==bZakonczDzien){
+			int odp = JOptionPane.showConfirmDialog(null, "Czy na pewno chcesz zakończyć dzień?\nZostaną utworzone raporty, a dane zostaną zliczone do pozostałych.", "UWAGA!", JOptionPane.YES_NO_OPTION);
+			
+			if (odp==JOptionPane.YES_OPTION) {
+				
+				//Zapisywanie danych do Statystyk
+				
+				zapiszStatystyke("Spozywcze");
+				zapiszStatystyke("Gospodarcze");
+				zapiszStatystyke("Sosy");
+				zapiszStatystyke("Napoje");
+				zapiszStatystyke("Potrawy");
+				zapiszStatystyke("Obrot");
+				
+				//Raport Magazynu
+				try {
+					mag.raport();
+				} catch (FileNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				//Raport historii zamowien
+				try {
+					his.raport();
+				} catch (FileNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				JOptionPane.showMessageDialog(null, "Zamknięto Dzień, teraz możesz zamknąć aplikację!");
+			}
+			else if (odp==JOptionPane.NO_OPTION){
+				JOptionPane.showMessageDialog(null, "Nie zakończono dnia i nie zapisano danych!");
+			}
+		}
+		else if (zr==bZamT[0]){	//przycisk T1
+			zam.setIsOK(false);
+			
+			if (taZam[0].getText().equals("")){}
+			else{
+				his.dodajZam(taZam[0]);
+				zysk+=mag.zaokragl(cenaZam[0]);
+				his.setPokazZysk(zysk);
+				lZysk.setText(String.valueOf(mag.zaokragl(zysk)) + " zł");
+				
+				
+				mag.sprawdzTowar(taZam[0]);
+				if (dostawa[0]==true) mag.sprawdzDostawa(taZam[0]);
+				mag.zaokraglWszystko();
+				mag.ustawSkladniki();
+				
+				for (int i=0; i<8; i++) his.setSprzedanePotrawy(mag.getSprzedanePotrawy(i), i);
+				
+				cenaZam[0]=cenaZam[1];
+				cenaZam[1]=cenaZam[2];
+				cenaZam[2]=cenaZam[3];
+				cenaZam[3]=cenaZam[4];
+				cenaZam[4]=0;
+				
+				dostawa[0]=dostawa[1];
+				dostawa[1]=dostawa[2];
+				dostawa[2]=dostawa[3];
+				dostawa[3]=dostawa[4];
+				dostawa[4]=false;
+				
+				taZam[0].setText(taZam[1].getText());
+				taZam[1].setText(taZam[2].getText());
+				taZam[2].setText(taZam[3].getText());
+				taZam[3].setText(taZam[4].getText());
+				taZam[4].setText("");
+				
+				((WatekBackup) runner).setMag(mag);
+				((WatekBackup) runner).setHisZam(his);
+				
+				if (zam.getIloscZam() > 0) zam.setIloscZam(false);
+			}
+		}
+		else if (zr==bZamT[1]){ //przycisk T2
+			zam.setIsOK(false);
+			if (taZam[1].getText().equals("")){}
+			else{
+				his.dodajZam(taZam[1]);
+				zysk+=mag.zaokragl(cenaZam[1]);
+				his.setPokazZysk(zysk);
+				lZysk.setText(String.valueOf(zysk) + " zł");
+				
+				mag.sprawdzTowar(taZam[1]);
+				if (dostawa[1]==true) mag.sprawdzDostawa(taZam[1]);
+				mag.zaokraglWszystko();
+				mag.ustawSkladniki();
+				
+				for (int i=0; i<8; i++) his.setSprzedanePotrawy(mag.getSprzedanePotrawy(i), i);
+				
+				cenaZam[1]=cenaZam[2];
+				cenaZam[2]=cenaZam[3];
+				cenaZam[3]=cenaZam[4];
+				cenaZam[4]=0;
+				
+				dostawa[1]=dostawa[2];
+				dostawa[2]=dostawa[3];
+				dostawa[3]=dostawa[4];
+				dostawa[4]=false;
+				
+				taZam[1].setText(taZam[2].getText());
+				taZam[2].setText(taZam[3].getText());
+				taZam[3].setText(taZam[4].getText());
+				taZam[4].setText("");
+				
+				((WatekBackup) runner).setMag(mag);
+				((WatekBackup) runner).setHisZam(his);
+				
+				if (zam.getIloscZam() > 1) zam.setIloscZam(false);
+			}
+		}
+		else if (zr==bZamT[2]){ //przycisk T3
+			zam.setIsOK(false);
+			
+			if (taZam[2].getText().equals("")){}
+			else{
+				his.dodajZam(taZam[2]);
+				zysk+=mag.zaokragl(cenaZam[2]);
+				his.setPokazZysk(zysk);
+				lZysk.setText(String.valueOf(zysk) + " zł");
+				
+				mag.sprawdzTowar(taZam[2]);
+				if (dostawa[2]==true) mag.sprawdzDostawa(taZam[2]);
+				mag.zaokraglWszystko();
+				mag.ustawSkladniki();
+				
+				for (int i=0; i<8; i++) his.setSprzedanePotrawy(mag.getSprzedanePotrawy(i), i);
+				
+				cenaZam[2]=cenaZam[3];
+				cenaZam[3]=cenaZam[4];
+				cenaZam[4]=0;
+				
+				dostawa[2]=dostawa[3];
+				dostawa[3]=dostawa[4];
+				dostawa[4]=false;
+				
+				taZam[2].setText(taZam[3].getText());
+				taZam[3].setText(taZam[4].getText());
+				taZam[4].setText("");
+				
+				((WatekBackup) runner).setMag(mag);
+				((WatekBackup) runner).setHisZam(his);
+				
+				if (zam.getIloscZam() > 2) zam.setIloscZam(false);
+			}
+		}
+		else if (zr==bZamT[3]){ //przycisk T4
+			zam.setIsOK(false);
+			
+			if (taZam[3].getText().equals("")){}
+			else{
+				his.dodajZam(taZam[3]);
+				zysk+=mag.zaokragl(cenaZam[3]);
+				his.setPokazZysk(zysk);
+				lZysk.setText(String.valueOf(zysk) + " zł");
+				
+				mag.sprawdzTowar(taZam[3]);
+				if (dostawa[3]==true) mag.sprawdzDostawa(taZam[3]);
+				mag.zaokraglWszystko();
+				mag.ustawSkladniki();
+				
+				for (int i=0; i<8; i++) his.setSprzedanePotrawy(mag.getSprzedanePotrawy(i), i);
+				
+				cenaZam[3]=cenaZam[4];
+				cenaZam[4]=0;
+				
+				dostawa[3]=dostawa[4];
+				dostawa[4]=false;
+				
+				taZam[3].setText(taZam[4].getText());
+				taZam[4].setText("");
+				
+				((WatekBackup) runner).setMag(mag);
+				((WatekBackup) runner).setHisZam(his);
+				
+				if (zam.getIloscZam() > 3) zam.setIloscZam(false);
+			}
+		}
+		else if (zr==bZamT[4]){ //przycisk T5
+			zam.setIsOK(false);
+			
+			if (taZam[4].getText().equals("")){}
+			else{
+				his.dodajZam(taZam[4]);
+				zysk+=mag.zaokragl(cenaZam[4]);
+				his.setPokazZysk(zysk);
+				lZysk.setText(String.valueOf(zysk) + " zł");
+				
+				mag.sprawdzTowar(taZam[4]);
+				if (dostawa[4]==true) mag.sprawdzDostawa(taZam[4]);
+				mag.zaokraglWszystko();
+				mag.ustawSkladniki();
+				
+				for (int i=0; i<8; i++) his.setSprzedanePotrawy(mag.getSprzedanePotrawy(i), i);
+				
+				cenaZam[4]=0;
+				
+				dostawa[4]=false;
+				
+				taZam[4].setText("");
+				
+				((WatekBackup) runner).setMag(mag);
+				((WatekBackup) runner).setHisZam(his);
+				
+				if (zam.getIloscZam() > 4) zam.setIloscZam(false);
+			}
+		}
+		
+		
+		if (zam.isOK()==true){
+			
+			if (zam.getIloscZam()>0){
+				for (int i=0; i<8;i++){
+					if(zam.getZamowienie(i).equals(",")){
+						;
+					}
+					else taZam[zam.getIloscZam()-1].append(zam.getZamowienie(i) + " - " + zam.getCenaPojedynczego(i) + "zł \n");
+				}
+				taZam[zam.getIloscZam()-1].append("Cena zamowienia: " + String.valueOf(mag.zaokragl(zam.getCenaZam())) + "zł" + "\n");
+				cenaZam[zam.getIloscZam()-1]=mag.zaokragl(zam.getCenaZam());
+				if (!(zam.getComment().equals(""))) taZam[zam.getIloscZam()-1].append("Komentarz: " + zam.getComment() + "\n");
+				if (!(zam.getAdres().equals(""))){taZam[zam.getIloscZam()-1].append("Adres: " + zam.getAdres() + "\n"); dostawa[zam.getIloscZam()-1] = true;}
+				if (!(zam.getTelefon()==0))taZam[zam.getIloscZam()-1].append("Telefon: " + String.valueOf(zam.getTelefon()) + "\n");
+			}
+		}
+		
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+}
+
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+
+class Zamow extends JDialog implements MouseListener { 
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private JButton bOK, bCofnij, bKasuj, bPodwoj, bKasuj2, bPlus, bDalej, bPominRoz, bZatwierdzZam, bPrzerwij, bDostawa, bCofDos, bOkDos;
+	private JButton bBurrito, bQuritto, bQuesadilla, bFrytki, bHamWol, bKurBur, bMale, bDuze, bLagodna, bOstra, bMieszana, bDanie, bNapoj;
+	private JButton bMadDog160, bMadDog600, bMadDog750, bCzosnkowy, bSeroweChili, bKetchup, bHamburgerowy, bArabskiPikantny, bTysiacaWysp, bAmerykanski, bSalsaMexicana, bGyros, bBarbecue;
+	private JButton bCocaCola, bPepsi, bEnergetyk, bWodaNiegaz, bWodaGaz, bCocaColaZero, bTymbark, bMaslanka;
+	private JLabel lBiezZam[] = new JLabel[8];
+	private JLabel lNumZam[] = new JLabel[8];
+	private JLabel lCenaPojedynczego[] = new JLabel[8];
+	private JLabel lDanie, lRozmiar, lSalsa, lTytul, lCena, lCenaZam, bg, lSosy, lNapoj, lWklepywaneTeraz, lRodzajZam;
+	private String zamowienie[] = new String[8];
+	private JTextField tKomentarz, tAdres, tTelefon;
+	private JLabel lKomentarz, lAdres, lTelefon;
+	private JTextArea tCena;
+	private double cenaZam;
+	private double cena[] = new double[8];
+	private int biezIloscZam=0, iloscZam=0;
+	private boolean okDate=false, dostawa=false;
+	private String comment, adres;
+	private int telefon;
+	private int ileKlawQWE = 43, focused=0;
+	private JButton klawiatura[] = new JButton[12];
+	private JLabel klawiaturaQWE[] = new JLabel[ileKlawQWE];
+	private String qwerty[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "a", "s", "d", "f",
+								"g", "h", "j", "k", "l", "z", "x", "c", "v", "b", "n", "m", ",", ".", "/", " ", "BackSpace", "CapsLock"};
+	private boolean shift=false;
+	private ImageIcon b1 = new ImageIcon("grafika/klawNum/b1.jpg");	
+	private ImageIcon b2 = new ImageIcon("grafika/klawNum/b2.jpg");
+	private ImageIcon b3 = new ImageIcon("grafika/klawNum/b3.jpg");
+	private ImageIcon b4 = new ImageIcon("grafika/klawNum/b4.jpg");
+	private ImageIcon b5 = new ImageIcon("grafika/klawNum/b5.jpg");
+	private ImageIcon b6 = new ImageIcon("grafika/klawNum/b6.jpg");
+	private ImageIcon b7 = new ImageIcon("grafika/klawNum/b7.jpg");
+	private ImageIcon b8 = new ImageIcon("grafika/klawNum/b8.jpg");
+	private ImageIcon b9 = new ImageIcon("grafika/klawNum/b9.jpg");
+	private ImageIcon b10 = new ImageIcon("grafika/klawNum/b10.jpg");
+	private ImageIcon bq = new ImageIcon("grafika/klawQWERTY/bq.jpg");
+	private ImageIcon bw = new ImageIcon("grafika/klawQWERTY/bw.jpg");
+	private ImageIcon be = new ImageIcon("grafika/klawQWERTY/be.jpg");
+	private ImageIcon br = new ImageIcon("grafika/klawQWERTY/br.jpg");
+	private ImageIcon bt = new ImageIcon("grafika/klawQWERTY/bt.jpg");
+	private ImageIcon by = new ImageIcon("grafika/klawQWERTY/by.jpg");
+	private ImageIcon bu = new ImageIcon("grafika/klawQWERTY/bu.jpg");
+	private ImageIcon bi = new ImageIcon("grafika/klawQWERTY/bi.jpg");
+	private ImageIcon bo = new ImageIcon("grafika/klawQWERTY/bo.jpg");
+	private ImageIcon bp = new ImageIcon("grafika/klawQWERTY/bp.jpg");
+	private ImageIcon ba = new ImageIcon("grafika/klawQWERTY/ba.jpg");
+	private ImageIcon bs = new ImageIcon("grafika/klawQWERTY/bs.jpg");
+	private ImageIcon bd = new ImageIcon("grafika/klawQWERTY/bd.jpg");
+	private ImageIcon bf = new ImageIcon("grafika/klawQWERTY/bf.jpg");
+	private ImageIcon bgg = new ImageIcon("grafika/klawQWERTY/bg.jpg");
+	private ImageIcon bh = new ImageIcon("grafika/klawQWERTY/bh.jpg");
+	private ImageIcon bj = new ImageIcon("grafika/klawQWERTY/bj.jpg");
+	private ImageIcon bk = new ImageIcon("grafika/klawQWERTY/bk.jpg");
+	private ImageIcon bl = new ImageIcon("grafika/klawQWERTY/bl.jpg");
+	private ImageIcon bz = new ImageIcon("grafika/klawQWERTY/bz.jpg");
+	private ImageIcon bx = new ImageIcon("grafika/klawQWERTY/bx.jpg");
+	private ImageIcon bc = new ImageIcon("grafika/klawQWERTY/bc.jpg");
+	private ImageIcon bv = new ImageIcon("grafika/klawQWERTY/bv.jpg");
+	private ImageIcon bb = new ImageIcon("grafika/klawQWERTY/bb.jpg");
+	private ImageIcon bn = new ImageIcon("grafika/klawQWERTY/bn.jpg");
+	private ImageIcon bm = new ImageIcon("grafika/klawQWERTY/bm.jpg");
+	private ImageIcon bprzec = new ImageIcon("grafika/klawQWERTY/b,.jpg");
+	private ImageIcon bkrop = new ImageIcon("grafika/klawQWERTY/bkro.jpg");
+	private ImageIcon bslash = new ImageIcon("grafika/klawQWERTY/bslash.jpg");
+	private ImageIcon bshift = new ImageIcon("grafika/klawQWERTY/bShift.jpg");
+	private ImageIcon bshiftA = new ImageIcon("grafika/klawQWERTY/bShiftA.jpg");
+	private ImageIcon bback = new ImageIcon("grafika/klawQWERTY/bBackSpace.jpg");
+	private ImageIcon bspace = new ImageIcon("grafika/klawQWERTY/bSpace.jpg");
+	private ImageIcon klawNUM[] = {b1, b2, b3, b4, b5, b6, b7, b8, b9, b10};
+	private ImageIcon klawQWE[] = {bq, bw, be, br, bt, by, bu, bi, bo, bp, ba, bs, bd, bf, bgg, bh, bj, bk, bl, bz, bx, bc, bv, bb, bn, bm,
+						bprzec, bkrop, bslash, bspace, bback, bshift, bshiftA};
+
+	
+	
+	
+	
+	public Zamow(JFrame owner) {
+		super(owner, "OzdApp", true);
+		setSize(1280, 800);
+		setTitle("Burritos v1.1");
+		setLayout(null);
+		setUndecorated(true);
+		
+		ImageIcon Ok = new ImageIcon("grafika/bOK.jpg");		//button Zatwierdzajacy zamowienie
+		bOK = new JButton(Ok);
+		bOK.setBounds(700, 206, 500, 166);
+		bOK.addMouseListener(this);
+		add(bOK);
+		
+		ImageIcon cof = new ImageIcon("grafika/bCofnij.jpg");		//button cofa do main menu, nie zatwierdza zamowien
+		bCofnij = new JButton(cof);
+		bCofnij.setBounds(700, 392, 500, 166);
+		bCofnij.addMouseListener(this);
+		add(bCofnij);
+		
+		lTytul = new JLabel("Zamówienia");						//Label zamowienia, gorny lewy bok
+		lTytul.setBounds(70, 20, 250, 50);
+		lTytul.setForeground(new java.awt.Color(250, 250, 250));
+		lTytul.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		add(lTytul);
+		
+		lWklepywaneTeraz = new JLabel("");						//Label pokazujacy co aktualnie jest wklepywane
+		lWklepywaneTeraz.setBounds(280, 20, 350, 50);
+		lWklepywaneTeraz.setForeground(new java.awt.Color(250, 250, 250));
+		lWklepywaneTeraz.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		add(lWklepywaneTeraz);
+		
+		ImageIcon przerw = new ImageIcon("grafika/bPrzerwij.jpg");
+		bPrzerwij = new JButton(przerw);
+		bPrzerwij.setBounds(1220, 0, 60, 60);
+		bPrzerwij.addMouseListener(this);
+		bPrzerwij.setVisible(false);
+		add(bPrzerwij);
+		
+		
+		for (int i=0;i<8;i++){
+			lNumZam[i] = new JLabel(String.valueOf(i+1) + ". ");		//labele z cyferka, obok zamowionych potraw
+			lNumZam[i].setBounds(70, 100+(70*i), 50, 50);
+			lNumZam[i].setForeground(new java.awt.Color(250, 250, 250));
+			lNumZam[i].setFont(new Font("Amatic SC", Font.BOLD, 45));
+			add(lNumZam[i]);
+			
+			lBiezZam[i] = new JLabel("");								//labele z zamowieniem
+			lBiezZam[i].setForeground(new java.awt.Color(250, 250, 250));
+			lBiezZam[i].setFont(new Font("Amatic SC", Font.BOLD, 45));
+			lBiezZam[i].setBounds(120, 100+(70*i), 350, 50);
+			lBiezZam[i].setBackground(Color.BLACK);
+			lBiezZam[i].addMouseListener(this);
+			add(lBiezZam[i]);
+			
+			
+			lCenaPojedynczego[i] = new JLabel("");								//labele z cena pojedynczej potrawy
+			lCenaPojedynczego[i].setForeground(new java.awt.Color(250, 250, 250));
+			lCenaPojedynczego[i].setFont(new Font("Amatic SC", Font.BOLD, 45));
+			lCenaPojedynczego[i].setBounds(470, 100+(70*i), 70, 50);
+			lCenaPojedynczego[i].setBackground(Color.BLACK);
+			add(lCenaPojedynczego[i]);
+		}
+		
+		ImageIcon c = new ImageIcon("grafika/bC.jpg");				//button Kasuj, kasuje ostatnio wklepane zamowienie
+		bKasuj = new JButton(c);
+		bKasuj.setBounds(70, 670, 60, 60);
+		bKasuj.addMouseListener(this);
+		bKasuj.setVisible(false);
+		add(bKasuj);
+		
+		ImageIcon podwoj = new ImageIcon("grafika/bPodwoj.jpg");
+		bPodwoj = new JButton(podwoj);
+		bPodwoj.setBounds(140, 670, 60, 60);
+		bPodwoj.addMouseListener(this);
+		bPodwoj.setVisible(false);
+		add(bPodwoj);
+		
+		ImageIcon dost = new ImageIcon("grafika/bDostawa.jpg");				//button Dostawa
+		bDostawa = new JButton(dost);
+		bDostawa.setBounds(450, 668, 240, 60);
+		bDostawa.addMouseListener(this);
+		bDostawa.setVisible(true);
+		add(bDostawa);
+		
+		ImageIcon dodKol = new ImageIcon("grafika/bDodajKolejne.jpg");	//button dodaj kolejne, po kliknieciu wlaczaja sie ekrany z wklepywaniem nowej potrawy
+		bPlus = new JButton(dodKol);
+		bPlus.setBounds(700, 20, 500, 166);
+		bPlus.addMouseListener(this);
+		add(bPlus);
+		
+		
+		tKomentarz = new JTextField("");								//textfield komentarz
+		tKomentarz.setFont(new Font("SansSerif",Font.BOLD, 20));
+		tKomentarz.setBounds(800, 578, 400, 40);
+		tKomentarz.addMouseListener(this);
+		add(tKomentarz);
+		
+		lKomentarz = new JLabel("Komentarz");							//label komentarz
+		lKomentarz.setBounds(700, 578, 100, 40);
+		lKomentarz.setForeground(new java.awt.Color(250, 250, 250));
+		lKomentarz.setFont(new Font("Amatic SC", Font.BOLD, 30));
+		lKomentarz.setVisible(true);
+		add(lKomentarz);
+		
+		tAdres = new JTextField("");								//textfield Adres
+		tAdres.setFont(new Font("SansSerif",Font.BOLD, 20));
+		tAdres.setBounds(800, 633, 400, 40);
+		tAdres.addMouseListener(this);
+		add(tAdres);
+		
+		lAdres = new JLabel("Adres");							//label Adres
+		lAdres.setBounds(700, 633, 100, 40);
+		lAdres.setForeground(new java.awt.Color(250, 250, 250));
+		lAdres.setFont(new Font("Amatic SC", Font.BOLD, 30));
+		lAdres.setVisible(true);
+		add(lAdres);
+		
+		tTelefon = new JTextField("");								//textfield telefon
+		tTelefon.setFont(new Font("SansSerif",Font.BOLD, 20));
+		tTelefon.setBounds(800, 688, 400, 40);
+		tTelefon.addMouseListener(this);
+		add(tTelefon);
+		
+		lTelefon = new JLabel("Telefon");							//label telefon
+		lTelefon.setBounds(700, 688, 100, 40);
+		lTelefon.setForeground(new java.awt.Color(250, 250, 250));
+		lTelefon.setFont(new Font("Amatic SC", Font.BOLD, 30));
+		lTelefon.setVisible(true);
+		add(lTelefon);
+		
+		//rodzaj zamowienia
+		
+		lRodzajZam = new JLabel("Rozmiar");							//label Rodzaj Zamowienia
+		lRodzajZam.setBounds(70, 20, 193, 50);
+		lRodzajZam.setForeground(new java.awt.Color(250, 250, 250));
+		lRodzajZam.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		lRodzajZam.setVisible(false);
+		add(lRodzajZam);
+		
+		ImageIcon danie = new ImageIcon("grafika/bDanie.jpg");
+		bDanie = new JButton(danie);
+		bDanie.setBounds(70, 70, 500, 166);
+		bDanie.addMouseListener(this);
+		bDanie.setVisible(false);
+		add(bDanie);
+		
+		ImageIcon napoj = new ImageIcon("grafika/bNapoj.jpg");
+		bNapoj = new JButton(napoj);
+		bNapoj.setBounds(70, 256, 500, 166);
+		bNapoj.addMouseListener(this);
+		bNapoj.setVisible(false);
+		add(bNapoj);		
+		
+		//rozmiary
+		
+		lRozmiar = new JLabel("Rozmiar");							//label rozmiar
+		lRozmiar.setBounds(70, 20, 193, 50);
+		lRozmiar.setForeground(new java.awt.Color(250, 250, 250));
+		lRozmiar.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		lRozmiar.setVisible(false);
+		add(lRozmiar);
+		
+		ImageIcon male = new ImageIcon("grafika/bMale.jpg");		//button male
+		bMale = new JButton(male);
+		bMale.setBounds(70, 70, 500, 166);
+		bMale.addMouseListener(this);
+		bMale.setVisible(false);
+		add(bMale);
+		
+		ImageIcon duze = new ImageIcon("grafika/bDuze.jpg");		//button duze
+		bDuze = new JButton(duze);
+		bDuze.setBounds(70, 256, 500, 166);
+		bDuze.addMouseListener(this);
+		bDuze.setVisible(false);
+		add(bDuze);		
+		
+		ImageIcon pominroz= new ImageIcon("grafika/bPomin.jpg");		//button pomin
+		bPominRoz = new JButton(pominroz);
+		bPominRoz.setBounds(700, 578, 500, 166);
+		bPominRoz.addMouseListener(this);
+		bPominRoz.setVisible(false);
+		add(bPominRoz);	
+		
+		//dania
+		
+		lDanie = new JLabel("Danie");							//label Danie
+		lDanie.setBounds(70, 20, 193, 50);
+		lDanie.setForeground(new java.awt.Color(250, 250, 250));
+		lDanie.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		lDanie.setVisible(false);
+		add(lDanie);
+		
+		ImageIcon burr = new ImageIcon("grafika/bBurrito.jpg");		//button burrito
+		bBurrito = new JButton(burr);
+		bBurrito.setBounds(70, 70, 500, 166);
+		bBurrito.addMouseListener(this);
+		bBurrito.setVisible(false);
+		add(bBurrito);
+		
+		ImageIcon qur = new ImageIcon("grafika/bQuritto.jpg");		//button quritto
+		bQuritto = new JButton(qur);
+		bQuritto.setBounds(70, 256, 500, 166);
+		bQuritto.addMouseListener(this);
+		bQuritto.setVisible(false);
+		add(bQuritto);
+		
+		ImageIcon que = new ImageIcon("grafika/bQuesadilla.jpg");	//button quesadilla
+		bQuesadilla = new JButton(que);
+		bQuesadilla.setBounds(590, 70, 500, 166);
+		bQuesadilla.addMouseListener(this);
+		bQuesadilla.setVisible(false);
+		add(bQuesadilla);
+		
+		ImageIcon frytki = new ImageIcon("grafika/bFrytki.jpg");	//button frytki
+		bFrytki = new JButton(frytki);
+		bFrytki.setBounds(590, 256, 500, 166);
+		bFrytki.addMouseListener(this);
+		bFrytki.setVisible(false);
+		add(bFrytki);
+		
+		ImageIcon hamwol = new ImageIcon("grafika/bHamWol.jpg");
+		bHamWol = new JButton(hamwol);	//button hamburger wolowy
+		bHamWol.setBounds(70, 442, 500, 166);
+		bHamWol.addMouseListener(this);
+		bHamWol.setVisible(false);
+		add(bHamWol);
+		
+		ImageIcon kurbur = new ImageIcon("grafika/bKurBur.jpg");
+		bKurBur = new JButton(kurbur);	//button kurczako burger
+		bKurBur.setBounds(590, 442, 500, 166);
+		bKurBur.addMouseListener(this);
+		bKurBur.setVisible(false);
+		add(bKurBur);
+		
+		//SALSY
+		
+		lSalsa = new JLabel("Salsa");								//label Salsa
+		lSalsa.setBounds(70, 20, 193, 50);
+		lSalsa.setForeground(new java.awt.Color(250, 250, 250));
+		lSalsa.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		lSalsa.setVisible(false);
+		add(lSalsa);
+		
+		ImageIcon lag = new ImageIcon("grafika/bLagodna.jpg");		//button lagodna
+		bLagodna = new JButton(lag);
+		bLagodna.setBounds(70, 70, 500, 166);
+		bLagodna.addMouseListener(this);
+		bLagodna.setVisible(false);
+		add(bLagodna);
+		
+		ImageIcon ostr = new ImageIcon("grafika/bOstra.jpg");		//button ostra
+		bOstra = new JButton(ostr);
+		bOstra.setBounds(70, 256, 500, 166);
+		bOstra.addMouseListener(this);
+		bOstra.setVisible(false);
+		add(bOstra);
+		
+		ImageIcon miesz = new ImageIcon("grafika/bMieszana.jpg");	//button mieszana
+		bMieszana = new JButton(miesz);
+		bMieszana.setBounds(590, 70, 500, 166);
+		bMieszana.addMouseListener(this);
+		bMieszana.setVisible(false);
+		add(bMieszana);
+				
+		//buttony z sosami
+			
+		lSosy = new JLabel("Sosy");								//label sosy
+		lSosy.setBounds(70, 20, 193, 50);
+		lSosy.setForeground(new java.awt.Color(250, 250, 250));
+		lSosy.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		lSosy.setVisible(false);
+		add(lSosy);
+		
+		bKasuj2 = new JButton(c);									//button Kasuj2, kasuje ostatnio dodany SOS
+		bKasuj2.setBounds(630, 10, 60, 60);
+		bKasuj2.addMouseListener(this);
+		bKasuj2.setVisible(false);
+		add(bKasuj2);
+		
+		ImageIcon mad160 = new ImageIcon("grafika/sosy/bMadDog160.jpg");
+		bMadDog160 = new JButton(mad160);
+		bMadDog160.setBounds(70, 70, 240, 150);
+		bMadDog160.addMouseListener(this);
+		bMadDog160.setVisible(false);
+		add(bMadDog160);
+		
+		ImageIcon mad600 = new ImageIcon("grafika/sosy/bMadDog600.jpg");
+		bMadDog600 = new JButton(mad600);
+		bMadDog600.setBounds(330, 70, 240, 150);
+		bMadDog600.addMouseListener(this);
+		bMadDog600.setVisible(false);
+		add(bMadDog600);
+		
+		ImageIcon mad750 = new ImageIcon("grafika/sosy/bMadDog750.jpg");
+		bMadDog750 = new JButton(mad750);
+		bMadDog750.setBounds(590, 70, 240, 150);
+		bMadDog750.addMouseListener(this);
+		bMadDog750.setVisible(false);
+		add(bMadDog750);
+		
+		
+		ImageIcon czosnek = new ImageIcon("grafika/sosy/bCzosnkowy.jpg");
+		bCzosnkowy = new JButton(czosnek);
+		bCzosnkowy.setBounds(850, 70, 240, 150);
+		bCzosnkowy.addMouseListener(this);
+		bCzosnkowy.setVisible(false);
+		add(bCzosnkowy);
+		
+		
+		ImageIcon serchil = new ImageIcon("grafika/sosy/bSeroweChili.jpg");
+		bSeroweChili = new JButton(serchil);
+		bSeroweChili.setBounds(70, 235, 240, 150);
+		bSeroweChili.addMouseListener(this);
+		bSeroweChili.setVisible(false);
+		add(bSeroweChili);
+		
+		
+		ImageIcon ketchup = new ImageIcon("grafika/sosy/bKetchup.jpg");
+		bKetchup = new JButton(ketchup);
+		bKetchup.setBounds(330, 235, 240, 150);
+		bKetchup.addMouseListener(this);
+		bKetchup.setVisible(false);
+		add(bKetchup);
+		
+		
+		ImageIcon hambr = new ImageIcon("grafika/sosy/bHamburgerowy.jpg");
+		bHamburgerowy = new JButton(hambr);
+		bHamburgerowy.setBounds(590, 235, 240, 150);
+		bHamburgerowy.addMouseListener(this);
+		bHamburgerowy.setVisible(false);
+		add(bHamburgerowy);
+		
+		
+		ImageIcon arbpik = new ImageIcon("grafika/sosy/bArabskiPikantny.jpg");
+		bArabskiPikantny = new JButton(arbpik);
+		bArabskiPikantny.setBounds(850, 235, 240, 150);
+		bArabskiPikantny.addMouseListener(this);
+		bArabskiPikantny.setVisible(false);
+		add(bArabskiPikantny);
+		
+		
+		ImageIcon twsp = new ImageIcon("grafika/sosy/bTysiacaWysp.jpg");
+		bTysiacaWysp = new JButton(twsp);
+		bTysiacaWysp.setBounds(70, 400, 240, 150);
+		bTysiacaWysp.addMouseListener(this);
+		bTysiacaWysp.setVisible(false);
+		add(bTysiacaWysp);
+		
+		
+		ImageIcon amer = new ImageIcon("grafika/sosy/bAmerykanski.jpg");
+		bAmerykanski = new JButton(amer);
+		bAmerykanski.setBounds(330, 400, 240, 150);
+		bAmerykanski.addMouseListener(this);
+		bAmerykanski.setVisible(false);
+		add(bAmerykanski);
+		
+		
+		ImageIcon salmex = new ImageIcon("grafika/sosy/bSalsaMexicana.jpg");
+		bSalsaMexicana = new JButton(salmex);
+		bSalsaMexicana.setBounds(590, 400, 240, 150);
+		bSalsaMexicana.addMouseListener(this);
+		bSalsaMexicana.setVisible(false);
+		add(bSalsaMexicana);
+		
+		
+		ImageIcon gyros = new ImageIcon("grafika/sosy/bGyros.jpg");
+		bGyros = new JButton(gyros);
+		bGyros.setBounds(850, 400, 240, 150);
+		bGyros.addMouseListener(this);
+		bGyros.setVisible(false);
+		add(bGyros);
+		
+		ImageIcon bbq = new ImageIcon("grafika/sosy/bBarbecue.jpg");
+		bBarbecue = new JButton(bbq);
+		bBarbecue.setBounds(70, 565, 240, 150);
+		bBarbecue.addMouseListener(this);
+		bBarbecue.setVisible(false);
+		add(bBarbecue);
+		
+		ImageIcon pomin = new ImageIcon("grafika/bDalej.jpg");		//button Dalej(pokazywany przy sosach)
+		bDalej = new JButton(pomin);
+		bDalej.setBounds(590, 578, 500, 166);
+		bDalej.addMouseListener(this);
+		bDalej.setVisible(false);
+		add(bDalej);
+		
+		//buttony z NAPOJAMI!!!!
+		
+		lNapoj = new JLabel("Napoje");								//label napoje
+		lNapoj.setBounds(70, 20, 193, 50);
+		lNapoj.setForeground(new java.awt.Color(250, 250, 250));
+		lNapoj.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		lNapoj.setVisible(false);
+		add(lNapoj);
+		
+		ImageIcon cola = new ImageIcon("grafika/bCocaCola.jpg");
+		bCocaCola = new JButton(cola);
+		bCocaCola.setBounds(70, 70, 240, 150);
+		bCocaCola.addMouseListener(this);
+		bCocaCola.setVisible(false);
+		add(bCocaCola);
+		
+		ImageIcon colaz = new ImageIcon("grafika/bCocaColaZero.jpg");
+		bCocaColaZero = new JButton(colaz);
+		bCocaColaZero.setBounds(330, 70, 240, 150);
+		bCocaColaZero.addMouseListener(this);
+		bCocaColaZero.setVisible(false);
+		add(bCocaColaZero);
+		
+		ImageIcon pepsi = new ImageIcon("grafika/bPepsi.jpg");
+		bPepsi = new JButton(pepsi);
+		bPepsi.setBounds(590, 70, 240, 150);
+		bPepsi.addMouseListener(this);
+		bPepsi.setVisible(false);
+		add(bPepsi);
+		
+		ImageIcon energy = new ImageIcon("grafika/bEnergetyk.jpg");
+		bEnergetyk = new JButton(energy);
+		bEnergetyk.setBounds(850, 70, 240, 150);
+		bEnergetyk.addMouseListener(this);
+		bEnergetyk.setVisible(false);
+		add(bEnergetyk);
+
+		ImageIcon wodan = new ImageIcon("grafika/bWodaNiegaz.jpg");
+		bWodaNiegaz = new JButton(wodan);
+		bWodaNiegaz.setBounds(70, 235, 240, 150);
+		bWodaNiegaz.addMouseListener(this);
+		bWodaNiegaz.setVisible(false);
+		add(bWodaNiegaz);
+		
+		ImageIcon wodag = new ImageIcon("grafika/bWodaGaz.jpg");
+		bWodaGaz = new JButton(wodag);
+		bWodaGaz.setBounds(330, 235, 240, 150);
+		bWodaGaz.addMouseListener(this);
+		bWodaGaz.setVisible(false);
+		add(bWodaGaz);
+		
+		ImageIcon masl = new ImageIcon("grafika/bMaslanka.jpg");
+		bMaslanka = new JButton(masl);
+		bMaslanka.setBounds(590, 235, 240, 150);
+		bMaslanka.addMouseListener(this);
+		bMaslanka.setVisible(false);
+		add(bMaslanka);
+		
+		ImageIcon tym = new ImageIcon("grafika/bTymbark.jpg");
+		bTymbark = new JButton(tym);
+		bTymbark.setBounds(850, 235, 240, 150);
+		bTymbark.addMouseListener(this);
+		bTymbark.setVisible(false);
+		add(bTymbark);
+		
+		//Wpisywanie Ceny
+		
+		lCena = new JLabel("Cena");								//lCena pokazuje sie przy wklepywaniu ceny
+		lCena.setBounds(70, 20, 193, 50);
+		lCena.setForeground(new java.awt.Color(250, 250, 250));
+		lCena.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		lCena.setVisible(false);
+		add(lCena);
+		
+		tCena = new JTextArea();								//textarea na ktorym pokazywana jest cena, ktora obecnie wklepujemy
+		tCena.setFont(new Font("SansSerif",Font.BOLD, 40));
+		tCena.setBounds(70, 70, 200, 50);
+		tCena.setVisible(false);
+		tCena.setEditable(false);
+		add(tCena);
+		
+		lCenaZam = new JLabel("0.0 zł");						//label pokazujacy cene calego zamowienia
+		lCenaZam.setBounds(300, 20, 200, 50);
+		lCenaZam.setForeground(new java.awt.Color(250, 250, 250));
+		lCenaZam.setFont(new Font("Amatic SC", Font.BOLD, 45));
+		add(lCenaZam);
+		
+		//buttony od klawiatury numerycznej
+		
+				
+		klawiatura[0] = new JButton(klawNUM[0]);
+		klawiatura[0].addMouseListener(this);
+		klawiatura[0].setVisible(false);
+		add(klawiatura[0]);
+		klawiatura[1] = new JButton(klawNUM[1]);
+		klawiatura[1].addMouseListener(this);
+		klawiatura[1].setVisible(false);
+		add(klawiatura[1]);
+		klawiatura[2] = new JButton(klawNUM[2]);
+		klawiatura[2].addMouseListener(this);
+		klawiatura[2].setVisible(false);
+		add(klawiatura[2]);
+		klawiatura[3] = new JButton(klawNUM[3]);
+		klawiatura[3].addMouseListener(this);
+		klawiatura[3].setVisible(false);
+		add(klawiatura[3]);
+		klawiatura[4] = new JButton(klawNUM[4]);
+		klawiatura[4].addMouseListener(this);
+		klawiatura[4].setVisible(false);
+		add(klawiatura[4]);
+		klawiatura[5] = new JButton(klawNUM[5]);
+		klawiatura[5].addMouseListener(this);
+		klawiatura[5].setVisible(false);
+		add(klawiatura[5]);
+		klawiatura[6] = new JButton(klawNUM[6]);
+		klawiatura[6].addMouseListener(this);
+		klawiatura[6].setVisible(false);
+		add(klawiatura[6]);
+		klawiatura[7] = new JButton(klawNUM[7]);
+		klawiatura[7].addMouseListener(this);
+		klawiatura[7].setVisible(false);
+		add(klawiatura[7]);
+		klawiatura[8] = new JButton(klawNUM[8]);
+		klawiatura[8].addMouseListener(this);
+		klawiatura[8].setVisible(false);
+		add(klawiatura[8]);
+		ImageIcon bKrop = new ImageIcon("grafika/klawNum/bKropka.jpg");
+		klawiatura[9] = new JButton(bKrop);
+		klawiatura[9].addMouseListener(this);
+		klawiatura[9].setVisible(false);
+		add(klawiatura[9]);
+		klawiatura[10] = new JButton(klawNUM[9]);
+		klawiatura[10].addMouseListener(this);
+		klawiatura[10].setVisible(false);
+		add(klawiatura[10]);
+		ImageIcon bC = new ImageIcon("grafika/bC.jpg");
+		klawiatura[11] = new JButton(bC);
+		klawiatura[11].addMouseListener(this);
+		klawiatura[11].setVisible(false);
+		add(klawiatura[11]);
+			
+		klawiatura[0].setBounds(70, 130, 60, 60);
+		klawiatura[1].setBounds(140, 130, 60, 60);
+		klawiatura[2].setBounds(210, 130, 60, 60);
+		klawiatura[3].setBounds(70, 200, 60, 60);
+		klawiatura[4].setBounds(140, 200, 60, 60);
+		klawiatura[5].setBounds(210, 200, 60, 60);
+		klawiatura[6].setBounds(70, 270, 60, 60);
+		klawiatura[7].setBounds(140, 270, 60, 60);
+		klawiatura[8].setBounds(210, 270, 60, 60);
+		klawiatura[9].setBounds(70, 340, 60, 60);
+		klawiatura[10].setBounds(140, 340, 60, 60);
+		klawiatura[11].setBounds(210, 340, 60, 60);
+		
+		ImageIcon kk = new ImageIcon("grafika/bOK200x60.jpg"); 			// button OK pod klawiatura numeryczna
+		bZatwierdzZam = new JButton(kk);
+		bZatwierdzZam.setBounds(70, 410, 200, 60);
+		bZatwierdzZam.addMouseListener(this);
+		bZatwierdzZam.setVisible(false);
+		add(bZatwierdzZam);
+		
+		//menu dostawy
+
+		bOkDos = new JButton(Ok);
+		bOkDos.setBounds(700, 20, 500, 166);
+		bOkDos.addMouseListener(this);
+		bOkDos.setVisible(false);
+		add(bOkDos);
+
+		bCofDos = new JButton(cof);
+		bCofDos.setBounds(700, 206, 500, 166);
+		bCofDos.addMouseListener(this);
+		bCofDos.setVisible(false);
+		add(bCofDos);
+		
+		for (int i=0; i<10; i++){		
+			klawiaturaQWE[i] = new JLabel(klawNUM[i]);
+			klawiaturaQWE[i].addMouseListener(this);
+			klawiaturaQWE[i].setVisible(false);
+			add(klawiaturaQWE[i]);
+		}
+		for (int i=10; i<ileKlawQWE; i++){		
+			klawiaturaQWE[i] = new JLabel(klawQWE[i-10]);
+			klawiaturaQWE[i].addMouseListener(this);
+			klawiaturaQWE[i].setVisible(false);
+			add(klawiaturaQWE[i]);
+		}
+		
+		
+		int x = 200;
+		klawiaturaQWE[0].setBounds(x+20, 400, 60, 60);
+		klawiaturaQWE[1].setBounds(x+90, 400, 60, 60);
+		klawiaturaQWE[2].setBounds(x+160, 400, 60, 60);
+		klawiaturaQWE[3].setBounds(x+230, 400, 60, 60);
+		klawiaturaQWE[4].setBounds(x+300, 400, 60, 60);
+		klawiaturaQWE[5].setBounds(x+370, 400, 60, 60);
+		klawiaturaQWE[6].setBounds(x+440, 400, 60, 60);
+		klawiaturaQWE[7].setBounds(x+510, 400, 60, 60);
+		klawiaturaQWE[8].setBounds(x+580, 400, 60, 60);
+		klawiaturaQWE[9].setBounds(x+650, 400, 60, 60);
+		klawiaturaQWE[10].setBounds(x+20, 470, 60, 60);
+		klawiaturaQWE[11].setBounds(x+90, 470, 60, 60);
+		klawiaturaQWE[12].setBounds(x+160, 470, 60, 60);
+		klawiaturaQWE[13].setBounds(x+230, 470, 60, 60);
+		klawiaturaQWE[14].setBounds(x+300, 470, 60, 60);
+		klawiaturaQWE[15].setBounds(x+370, 470, 60, 60);
+		klawiaturaQWE[16].setBounds(x+440, 470, 60, 60);
+		klawiaturaQWE[17].setBounds(x+510, 470, 60, 60);
+		klawiaturaQWE[18].setBounds(x+580, 470, 60, 60);
+		klawiaturaQWE[19].setBounds(x+650, 470, 60, 60);
+		klawiaturaQWE[20].setBounds(x+55, 540, 60, 60);
+		klawiaturaQWE[21].setBounds(x+125, 540, 60, 60);
+		klawiaturaQWE[22].setBounds(x+195, 540, 60, 60);
+		klawiaturaQWE[23].setBounds(x+265, 540, 60, 60);
+		klawiaturaQWE[24].setBounds(x+335, 540, 60, 60);
+		klawiaturaQWE[25].setBounds(x+405, 540, 60, 60);
+		klawiaturaQWE[26].setBounds(x+475, 540, 60, 60);
+		klawiaturaQWE[27].setBounds(x+545, 540, 60, 60);
+		klawiaturaQWE[28].setBounds(x+615, 540, 60, 60);
+		klawiaturaQWE[29].setBounds(x+90, 610, 60, 60);
+		klawiaturaQWE[30].setBounds(x+160, 610, 60, 60);
+		klawiaturaQWE[31].setBounds(x+230, 610, 60, 60);
+		klawiaturaQWE[32].setBounds(x+300, 610, 60, 60);
+		klawiaturaQWE[33].setBounds(x+370, 610, 60, 60);
+		klawiaturaQWE[34].setBounds(x+440, 610, 60, 60);
+		klawiaturaQWE[35].setBounds(x+510, 610, 60, 60);
+		klawiaturaQWE[36].setBounds(x+580, 610, 60, 60);
+		klawiaturaQWE[37].setBounds(x+650, 610, 60, 60);
+		klawiaturaQWE[38].setBounds(x+720, 610, 60, 60);
+		klawiaturaQWE[39].setBounds(x+200, 680, 400, 60);//space
+		klawiaturaQWE[40].setBounds(x+720, 400, 100, 60);//backspace
+		klawiaturaQWE[41].setBounds(x-55, 540, 100, 60);//capslock
+		klawiaturaQWE[42].setBounds(x-55, 540, 100, 60);//capslock Aktwny
+		
+		bg=new JLabel(new ImageIcon("grafika/tlo.jpg"));			//label z tlem
+		bg.setBounds(0,0,1280,800);
+		bg.setOpaque(true);
+		add(bg);
+	}
+	
+	public String getZamowienie(int x){		//zwraca pojedyncza potrawe z zamowienia
+		return zamowienie[x];
+	}
+	
+	public String getCenaPojedynczego(int x){	//zwraca cene pojedynczej potrawy
+		return String.valueOf(cena[x]);
+	}
+	
+	public void setCenaPojedynczegoLabel(int x, String str){		//ustawia labele z cenami pojedynczych potraw na puste
+		lCenaPojedynczego[x].setText(str);
+	}
+	
+	public void setIloscZam(boolean x){		//ustawia ilosc zamowien jesli true to zwieksza o 1, jesli false to zmniejsza o 1
+		if (x) iloscZam++;
+		else iloscZam--;
+	}
+	
+	public int getIloscZam(){		//zwraca obecna ilosc zamowien
+		return iloscZam;
+	}
+	
+	public void setZamownienie(int x, String str){		//ustawia zamowienie, czyli pojedyncza potrawe z zamowienia
+		zamowienie[x]=str;
+	}
+	
+	public void setIsOK(boolean x){ 	//ustawia zmienna okDate, ktora wypisuje w main menu zamowienia
+		okDate = x;
+	}
+	
+	public boolean isOK(){	//pobranie okDate
+		return okDate;
+	}
+
+	public String getComment(){		//zwraca komentarz
+		return comment;
+	}
+	
+	public String getAdres(){
+		return adres;
+	}
+	
+	public int getTelefon(){
+		return telefon;
+	}
+	
+	public void setComment(){		//ustawia komantarz na pusty
+		comment="";
+	}
+	
+	public void setAdres(){
+		adres="";
+	}
+	
+	public void setTelefon(){
+		telefon=0;
+	}
+	
+	public double getCenaZam(){		//zwraca cene calego zamowienia
+		return cenaZam;
+	}
+	
+	public void setCenaZam(){		//ustawia cene calego zamowienia na 0
+		cenaZam=0;
+	}
+	
+	public void setLabelCenaZam(){	//ustawia label z cena zamowienia na 0
+		lCenaZam.setText("0.0");
+	}
+	
+	public void setCenaPojedynczego(){		//ustawia ceny pojedynczych potraw na 0
+		for (int i=0;i<8;i++) {cena[i]=0;}
+	}
+	
+	private void pokazRodzaj(boolean x){
+		lRodzajZam.setVisible(x);
+		bDanie.setVisible(x);
+		bNapoj.setVisible(x);
+		bPrzerwij.setVisible(x);
+	}
+	
+	private void pokazRozmiar(boolean x){
+		lRozmiar.setVisible(x);
+		bMale.setVisible(x);
+		bDuze.setVisible(x);
+		bPominRoz.setVisible(x);
+		bPrzerwij.setVisible(x);
+	}
+	
+	private void pokazDania(boolean x){
+		lDanie.setVisible(x);
+		bBurrito.setVisible(x);
+		bQuritto.setVisible(x);
+		bQuesadilla.setVisible(x);
+		bFrytki.setVisible(x);
+		bPrzerwij.setVisible(x);
+		bHamWol.setVisible(x);
+		bKurBur.setVisible(x);
+	}
+	
+	private void pokazNapoj(boolean x){
+		lNapoj.setVisible(x);
+		bCocaCola.setVisible(x);
+		bPepsi.setVisible(x);
+		bEnergetyk.setVisible(x);
+		bWodaNiegaz.setVisible(x);
+		bWodaGaz.setVisible(x);
+		bCocaColaZero.setVisible(x);
+		bTymbark.setVisible(x);
+		bMaslanka.setVisible(x);
+		bPrzerwij.setVisible(x);
+	}
+	
+	private void pokazSalsa(boolean x){
+		lSalsa.setVisible(x);
+		bLagodna.setVisible(x);
+		bOstra.setVisible(x);
+		bMieszana.setVisible(x);
+		bPrzerwij.setVisible(x);
+	}
+	
+	private void pokazSosy(boolean x){
+		lSosy.setVisible(x);
+		bMadDog160.setVisible(x);
+		bMadDog600.setVisible(x);
+		bMadDog750.setVisible(x);
+		bCzosnkowy.setVisible(x);
+		bSeroweChili.setVisible(x);
+		bKetchup.setVisible(x);
+		bHamburgerowy.setVisible(x);
+		bArabskiPikantny.setVisible(x);
+		bTysiacaWysp.setVisible(x);
+		bAmerykanski.setVisible(x);
+		bSalsaMexicana.setVisible(x);
+		bGyros.setVisible(x);
+		bBarbecue.setVisible(x);
+		bDalej.setVisible(x);
+		bKasuj2.setVisible(x);
+		bPrzerwij.setVisible(x);
+	}
+	
+	private void pokazZam(boolean x){
+		lTytul.setVisible(x);
+		for (int i=0;i<8;i++) {
+			lBiezZam[i].setVisible(x);
+			lNumZam[i].setVisible(x);
+			lCenaPojedynczego[i].setVisible(x);
+		}
+		bOK.setVisible(x);
+		bCofnij.setVisible(x);
+		bPlus.setVisible(x);
+		lCenaZam.setVisible(x);
+		tKomentarz.setVisible(x);
+		lKomentarz.setVisible(x);
+		tAdres.setVisible(x);
+		lAdres.setVisible(x);
+		tTelefon.setVisible(x);
+		lTelefon.setVisible(x);
+		bDostawa.setVisible(x);
+	}
+	
+	private void pokazDostawa(boolean x){
+		lKomentarz.setVisible(x);
+		tKomentarz.setVisible(x);
+		lAdres.setVisible(x);
+		tAdres.setVisible(x);
+		lTelefon.setVisible(x);
+		tTelefon.setVisible(x);
+		bCofDos.setVisible(x);
+		bOkDos.setVisible(x);
+		pokazKlawQWE(x);
+		dostawa = x;
+		if (dostawa==true) {
+			lKomentarz.setBounds(70, 50, 100, 40);
+			tKomentarz.setBounds(170, 50, 400, 40);
+			lAdres.setBounds(70, 105, 100, 40);
+			tAdres.setBounds(170, 105, 400, 40);
+			lTelefon.setBounds(70, 160, 100, 40);
+			tTelefon.setBounds(170, 160, 400, 40);
+		}
+		else {
+			lKomentarz.setBounds(700, 578, 100, 40);
+			tKomentarz.setBounds(800, 578, 400, 40);
+			lAdres.setBounds(700, 633, 100, 40);
+			tAdres.setBounds(800, 633, 400, 40);
+			lTelefon.setBounds(700, 688, 100, 40);
+			tTelefon.setBounds(800, 688, 400, 40);
+		}
+	}
+	
+	private void pokazKlaw(boolean x){
+		lCena.setVisible(x);
+		tCena.setVisible(x);
+		for (int i=0;i<12;i++) klawiatura[i].setVisible(x);
+		bZatwierdzZam.setVisible(x);
+		bPrzerwij.setVisible(x);
+		bPrzerwij.setVisible(x);
+	}
+	
+	private void pokazKlawQWE(boolean x){
+		for (int i=0;i<ileKlawQWE;i++) klawiaturaQWE[i].setVisible(x);
+	}
+	
+	public boolean isNumeric(String str)  //zwraca true jesli string jest liczba lub false jesli nie jest liczba
+	{  
+	  try  
+	  {  
+		  Double.parseDouble(str);  
+	  }  
+	  catch(NumberFormatException nfe)  
+	  {  
+	    return false;  
+	  }  
+	  return true;  
+	}
+	
+	public void usunSos(JLabel x){
+		
+		String str[] = x.getText().split(",");
+		x.setText("");
+		str[str.length-1]="";
+		x.setText(str[0]);
+		for (int i=1; i<str.length;i++){
+			x.setText(x.getText() + "," + str[i]);
+		}
+		String str2 = x.getText();
+		int b = str2.length();
+		if (str2.charAt(b-1) == ','){
+			str2 = str2.substring(0, b-1);
+		}
+		x.setText(str2);
+		
+	}
+	
+	public double zaokragl(double x){
+		x *= 100;
+        x = Math.round(x);
+        return x /= 100;
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		
+	}
+	
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		Object z = e.getSource();
+		
+		if (z==bPlus) {						//klikniecie na Dodaj kolejne
+			if(biezIloscZam<8){
+				pokazZam(false);
+				pokazRodzaj(true);	
+			}
+		}
+		else if (z==bOK) {	//klikniecie na OK
+			
+			if (biezIloscZam==0) {}
+			else {
+				for (int i=0;i<8;i++) zamowienie[i]=lBiezZam[i].getText() + ",";
+				comment = tKomentarz.getText();
+				adres = tAdres.getText();
+				if (isNumeric(tTelefon.getText())) telefon = Integer.parseInt(tTelefon.getText());
+				cenaZam = zaokragl(Double.parseDouble(lCenaZam.getText()));
+				okDate = true;
+				biezIloscZam=0;
+				setIloscZam(true);
+				//zerowanie forma
+				setVisible(false);
+				for (int j=0;j<8;j++) lBiezZam[j].setText("");
+				for (int i=0;i<8;i++) lCenaPojedynczego[i].setText("");
+				tCena.setText("");
+				tKomentarz.setText("");
+				tAdres.setText("");
+				tTelefon.setText("");
+				bPlus.setEnabled(true);
+			}
+		}
+		else if (z==bCofnij){							//klikniecie na Cofnij
+			int odp = JOptionPane.showConfirmDialog(null, "Czy na pewno chcesz cofnąć? Zamówienie nie zostanie zapisane.", "UWAGA!", JOptionPane.YES_NO_OPTION);
+			if (odp==JOptionPane.YES_OPTION) {
+				setVisible(false);
+				for (int i=0;i<8;i++) lBiezZam[i].setText("");
+				tCena.setText("");
+				tKomentarz.setText("");
+				tAdres.setText("");
+				tTelefon.setText("");
+				okDate = false;
+				biezIloscZam=0;
+				for (int i=0;i<8;i++) lCenaPojedynczego[i].setText("");
+				cenaZam=0;
+				tKomentarz.setText("");
+				bPlus.setEnabled(true);
+			}
+		}
+		else if (z==bZatwierdzZam){				//klikniecie na OK po podaniu ceny
+			
+			if (isNumeric(tCena.getText())){	
+				pokazKlaw(false);
+				pokazZam(true);
+				//bPrzerwij.setVisible(false);
+				
+				lWklepywaneTeraz.setText("");
+				cena[biezIloscZam]=zaokragl(Double.parseDouble(tCena.getText()));
+				lCenaPojedynczego[biezIloscZam].setText(String.valueOf(zaokragl(cena[biezIloscZam])));
+				cenaZam=cena[0]+cena[1]+cena[2]+cena[3]+cena[4]+cena[5]+cena[6]+cena[7];
+				lCenaZam.setText(String.valueOf(zaokragl(cenaZam)));
+				tCena.setText("");
+				
+				biezIloscZam++;
+				
+			}
+			else {
+				tCena.setText("");
+				JOptionPane.showMessageDialog(null, "Podaj cenę potrawy!", "Błąd!", JOptionPane.WARNING_MESSAGE);
+			}
+		}
+		
+		else if (z==bPrzerwij){
+			lWklepywaneTeraz.setText("");
+			lBiezZam[biezIloscZam].setText("");
+			pokazZam(true);
+			pokazRodzaj(false);
+			pokazRozmiar(false);
+			pokazDania(false);
+			pokazSalsa(false);
+			pokazNapoj(false);
+			pokazSosy(false);
+			pokazKlaw(false);
+		}
+		else if (z==bDanie) {						//klikniecie na Danie
+			pokazRodzaj(false);
+			pokazRozmiar(true);	
+		}
+		else if (z==bNapoj) {						//klikniecie na Napoj
+			pokazRodzaj(false);
+			pokazNapoj(true);
+		}
+		else if (z==bBurrito) {						//klikniecie na Burrito
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"B");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"B");
+			pokazDania(false);
+			pokazSalsa(true);
+		}
+		else if (z==bQuritto) {						//klikniecie na Quritto
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"Q");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"Q");
+			pokazDania(false);
+			pokazSosy(true);
+
+		}
+		else if (z==bQuesadilla) {					//klikniecie na Quesadilla
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"QS");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"QS");
+			pokazDania(false);
+			pokazSalsa(true);
+
+		}
+		else if (z==bFrytki) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"F");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"F");
+			pokazDania(false);
+			pokazSosy(true);
+		}
+		else if (z==bHamWol) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"HW");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"HW");
+			pokazDania(false);
+			pokazSosy(true);
+		}
+		else if (z==bKurBur) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"KB");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"KB");
+			pokazDania(false);
+			pokazSosy(true);
+		}
+		else if (z==bCocaCola) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"Coca-Cola");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"Coca-Cola");
+			pokazNapoj(false);
+			pokazKlaw(true);
+		}
+		else if (z==bPepsi) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"Pepsi");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"Pepsi");
+			pokazNapoj(false);
+			pokazKlaw(true);
+		}
+		else if (z==bEnergetyk) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"Black");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"Black");
+			pokazNapoj(false);
+			pokazKlaw(true);
+		}
+		else if (z==bWodaNiegaz) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"Woda niegazowana");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"Woda niegazowana");
+			pokazNapoj(false);
+			pokazKlaw(true);
+		}
+		else if (z==bWodaGaz) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"Woda gazowana");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"Woda gazowana");
+			pokazNapoj(false);
+			pokazKlaw(true);
+		}
+		else if (z==bCocaColaZero) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"Coca-Cola Zero");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"Coca-Cola Zero");
+			pokazNapoj(false);
+			pokazKlaw(true);
+		}
+		else if (z==bTymbark) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"Tymbark");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"Tymbark");
+			pokazNapoj(false);
+			pokazKlaw(true);
+		}
+		else if (z==bMaslanka) {						//klikniecie na Frytki
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"Maślanka");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"Maślanka");
+			pokazNapoj(false);
+			pokazKlaw(true);
+		}
+		else if (z==bMale) {						//klikniecie na Male
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"M");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"M");
+			pokazRozmiar(false);
+			pokazDania(true);
+		}
+		else if (z==bDuze) {						//klikniecie na Duze
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"D");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"D");
+			pokazRozmiar(false);
+			pokazDania(true);
+		}
+		else if (z==bPominRoz) {						//klikniecie na Duze
+			pokazRozmiar(false);
+			pokazDania(true);
+		}
+		else if (z==bLagodna) {						//klikniecie na Lagodna
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"L");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"L");
+			pokazSalsa(false);
+			pokazSosy(true);
+			if (biezIloscZam>=7) bPlus.setEnabled(false);
+		}
+		else if (z==bOstra) {						//klikniecie na Ostra
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"O");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"O");
+			pokazSalsa(false);
+			pokazSosy(true);
+			if (biezIloscZam>=7) bPlus.setEnabled(false);
+
+		}
+		else if (z==bMieszana) {						//klikniecie na Ostra
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+"M");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+"M");
+			pokazSalsa(false);
+			pokazSosy(true);
+			if (biezIloscZam>=7) bPlus.setEnabled(false);
+
+		}
+		else if (z==bMadDog160) {						//klikniecie na MadDog160
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",md160");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",md160");
+		}
+		else if (z==bMadDog600) {						//klikniecie na MadDog600
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",md600");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",md600");
+		}
+		else if (z==bMadDog750) {						//klikniecie na MadDog750
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",md750");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",md750");
+		}
+		else if (z==bCzosnkowy) {						//klikniecie na Czosnkowy
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",czo");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",czo");
+		}
+		else if (z==bSeroweChili) {						//klikniecie na SeroweChili
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",ser");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",ser");
+		}
+		else if (z==bKetchup) {						//klikniecie na Ketchup
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",ket");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",ket");
+		}
+		else if (z==bHamburgerowy) {						//klikniecie na Hamburgerowy
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",ham");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",ham");
+		}
+		else if (z==bArabskiPikantny) {						//klikniecie na ArabskiPikantny
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",arb");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",arb");
+		}
+		else if (z==bTysiacaWysp) {						//klikniecie na TysiacaWysp
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",wsp");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",wsp");
+		}
+		else if (z==bAmerykanski) {						//klikniecie na Amerykanski
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",ame");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",ame");
+		}
+		else if (z==bSalsaMexicana) {						//klikniecie na SalsaMexicana
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",mex");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",mex");
+		}
+		else if (z==bGyros) {						//klikniecie na Ketchup
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",gyr");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",gyr");
+		}
+		else if (z==bBarbecue) {						//klikniecie na Ketchup
+			lBiezZam[biezIloscZam].setText(lBiezZam[biezIloscZam].getText()+",bbq");
+			lWklepywaneTeraz.setText(lWklepywaneTeraz.getText()+",bbq");
+		}
+		else if(z==bDalej){							//klikniecie na Pomin w Maddogach
+			pokazSosy(false);
+			pokazKlaw(true);
+		}
+		else if (z==klawiatura[0]){
+			tCena.append("1");
+		}
+		else if (z==klawiatura[1]){
+			tCena.append("2");
+		}
+		else if (z==klawiatura[2]){
+			tCena.append("3");
+		}
+		else if (z==klawiatura[3]){
+			tCena.append("4");
+		}
+		else if (z==klawiatura[4]){
+			tCena.append("5");
+		}
+		else if (z==klawiatura[5]){
+			tCena.append("6");
+		}
+		else if (z==klawiatura[6]){
+			tCena.append("7");
+		}
+		else if (z==klawiatura[7]){
+			tCena.append("8");
+		}
+		else if (z==klawiatura[8]){
+			tCena.append("9");
+		}
+		else if (z==klawiatura[9]){
+			tCena.append(".");
+		}
+		else if (z==klawiatura[10]){
+			tCena.append("0");
+		}
+		else if (z==klawiatura[11]){
+			tCena.setText("");
+		}
+		else if (z==bDostawa){						//Klikniecie na D
+			pokazZam(false);
+			pokazDostawa(true);
+		}
+		else if (z==bOkDos){
+			if (isNumeric(tTelefon.getText())){
+				pokazDostawa(false);
+				pokazZam(true);
+				focused=0;
+			}
+			else JOptionPane.showMessageDialog(null, "Podaj telefon w formacie 123456789");
+		}
+		else if (z==bCofDos){
+			pokazDostawa(false);
+			tKomentarz.setText("");
+			tAdres.setText("");
+			tTelefon.setText("");
+			pokazZam(true);
+			focused=0;
+		}
+		else if (z==tKomentarz){
+			focused = 1;
+		}
+		else if (z==tAdres){
+			focused = 2;
+		}
+		else if (z==tTelefon){
+			focused = 3;
+		}
+		else if (z==klawiaturaQWE[41]){//shift
+			shift=true;
+			klawiaturaQWE[41].setVisible(false);
+			klawiaturaQWE[42].setVisible(true);
+		}
+		else if (z==klawiaturaQWE[42]){//shiftA
+			shift=false;
+			klawiaturaQWE[42].setVisible(false);
+			klawiaturaQWE[41].setVisible(true);
+	}
+		else if (z==klawiaturaQWE[ileKlawQWE-3]){//backspace!!!
+			if (focused==1){
+				String str = tKomentarz.getText();
+				if (str.length()!=0){
+					String str2 = str.substring(0, str.length()-1);
+					tKomentarz.setText(str2);	
+				}
+			}
+			else if (focused==2){
+				String str = tAdres.getText();
+				if (str.length()!=0){
+					String str2 = str.substring(0, str.length()-1);
+					tAdres.setText(str2);	
+				}
+			}
+			else if (focused==3){
+				String str = tTelefon.getText();
+				if (str.length()!=0){
+					String str2 = str.substring(0, str.length()-1);
+					tTelefon.setText(str2);	
+				}
+			}
+		}
+		else if (z==bKasuj) {						//klikniecie na c
+			
+			for (int i=0;i<8;i++) {
+				
+				Color c = lBiezZam[i].getBackground();
+				String str = c.toString();
+				
+				if (str.equals("java.awt.Color[r=50,g=50,b=50]")){
+					
+					lBiezZam[i].setText("");
+					cena[i]=0;
+					lCenaPojedynczego[i].setText("");
+					for (int j=i; j<7; j++){
+						lBiezZam[j].setText(lBiezZam[j+1].getText());
+						cena[j]=cena[j+1];
+						lCenaPojedynczego[j].setText(lCenaPojedynczego[j+1].getText());
+					}
+					lBiezZam[i].setBackground(Color.BLACK);
+					lCenaPojedynczego[i].setBackground(Color.BLACK);
+					lBiezZam[i].setOpaque(false);
+					lCenaPojedynczego[i].setOpaque(false);
+					lBiezZam[7].setText("");
+					cena[7]=0;
+					lCenaPojedynczego[7].setText("");
+					cenaZam=cena[0]+cena[1]+cena[2]+cena[3]+cena[4]+cena[5]+cena[6]+cena[7];
+					cenaZam=zaokragl(cenaZam);
+					lCenaZam.setText(String.valueOf(cenaZam));
+					biezIloscZam--;
+				}
+				
+			}
+			bPodwoj.setVisible(false);
+			bKasuj.setVisible(false);	
+		}
+		else if (z==bPodwoj){
+			
+			for (int i=0;i<8;i++) {
+					
+				Color c = lBiezZam[i].getBackground();
+				String str = c.toString();
+					
+				if (str.equals("java.awt.Color[r=50,g=50,b=50]")){
+					lBiezZam[biezIloscZam].setText(lBiezZam[i].getText());
+					cena[biezIloscZam]=cena[i];
+					lCenaPojedynczego[biezIloscZam].setText(lCenaPojedynczego[i].getText());
+						
+					lBiezZam[i].setBackground(Color.BLACK);
+					lCenaPojedynczego[i].setBackground(Color.BLACK);
+					lBiezZam[i].setOpaque(false);
+					lCenaPojedynczego[i].setOpaque(false);
+					cenaZam=cena[0]+cena[1]+cena[2]+cena[3]+cena[4]+cena[5]+cena[6]+cena[7];
+					lCenaZam.setText(String.valueOf(cenaZam));
+					biezIloscZam++;
+				}
+			}
+			bKasuj.setVisible(false);
+			bPodwoj.setVisible(false);
+		}
+		else if (z==bKasuj2){
+			if (lWklepywaneTeraz.getText().length()==3 || lWklepywaneTeraz.getText().length()==4){}
+			else {usunSos(lWklepywaneTeraz); usunSos(lBiezZam[biezIloscZam]);}	
+		}
+		
+		
+		boolean zaznaczone = false;
+		for (int i=0;i<8;i++){
+
+			if (z==lBiezZam[i]){
+				Color c = lBiezZam[i].getBackground();
+				String str = c.toString();
+				for (int j=0; j<8; j++) {
+					Color c2 = lBiezZam[j].getBackground();
+					String str2 = c2.toString();
+					if (str2.equals("java.awt.Color[r=50,g=50,b=50]")) {zaznaczone=true;}//zaznaczone sprawdza czy inne labele sa zaznaczone, aby nie zaznaczyc dwoch na raz
+				}
+				if (!(lBiezZam[i].getText().equals("")) && str.equals("java.awt.Color[r=0,g=0,b=0]") && zaznaczone==false) {
+					lBiezZam[i].setOpaque(true);
+					lCenaPojedynczego[i].setOpaque(true);
+					lBiezZam[i].setBackground(new java.awt.Color(50, 50, 50));
+					lCenaPojedynczego[i].setBackground(new java.awt.Color(50, 50, 50));
+					bKasuj.setVisible(true);
+					if (biezIloscZam<8) bPodwoj.setVisible(true);
+				}
+				else if (str.equals("java.awt.Color[r=50,g=50,b=50]")){
+					lBiezZam[i].setOpaque(false);
+					lCenaPojedynczego[i].setOpaque(false);
+					lBiezZam[i].setBackground(Color.BLACK);
+					lCenaPojedynczego[i].setBackground(Color.BLACK);
+					bKasuj.setVisible(false);
+					bPodwoj.setVisible(false);
+				}
+			}
+		}
+		
+		
+		for (int i=0; i<ileKlawQWE-3; i++){
+			
+			if (z==klawiaturaQWE[i]){
+				if (focused==1){
+					if (shift==false) tKomentarz.setText(tKomentarz.getText() + qwerty[i]);
+					else tKomentarz.setText(tKomentarz.getText() + qwerty[i].toUpperCase());
+				}
+				else if (focused==2){
+					if (shift==false) tAdres.setText(tAdres.getText() + qwerty[i]);
+					else tAdres.setText(tAdres.getText() + qwerty[i].toUpperCase());
+				}
+				else if (focused==3){
+					if (shift==false) tTelefon.setText(tTelefon.getText() + qwerty[i]);
+					else tTelefon.setText(tTelefon.getText() + qwerty[i].toUpperCase());
+				}
+			}
+			
+			
+		}
+		
+		
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+}
+
+import java.awt.Font;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+
+class Magazyn extends JDialog implements MouseListener {
+
+	
+	
+	
+	/**
+	 * 
+	 */
+	
+	private static final long serialVersionUID = 1L;
+	//zmienne do produktow
+	private static int iloscSpozywczych = 22;
+	private String spozywcze[] = {"Bułki Maślane", "Tortilla 25cm", "Tortilla 30cm", "Frytki", "Ser w plastrach", "Ser tarty", "Mięso wieprzowo-wołowe",
+			"Pierś z kurczaka", "Mięso wołowe burger", "Mix sałat", "Salsa Łagodna", "Salsa Pikantna", "Kukurydza", "Fasola", "Ogórek kiszony", "Ryż", "Olej", 
+			"Jogurt naturalny", "Mleko", "Sól", "Cukier", "Sos Dawtona"};
+	private JLabel lSpozywczy[] = new JLabel[iloscSpozywczych];
+	private JLabel lIloscSpozywczych[] = new JLabel[iloscSpozywczych];
+	private JTextField tZmienIloscSpozywczych[] = new JTextField[iloscSpozywczych];
+	private double stanSpozywczych[] = new double [iloscSpozywczych];
+	private double zuzyteSpozywcze[] = new double [iloscSpozywczych];
+	private boolean czySpozywcze = false;
+	
+	//zmienne do gospodarczych
+	private static int iloscGospodarczych = 20;
+	private String gospodarcze[] = {"Folia aluminiowa", "Folia strecz", "Pudełko do burgerów", "Pudełko do quritto", 
+			"Pudełko do Frytek Male", "Pudełko do Frytek Duze", "Kapsy", "Kubeczek do kawy", "Wieczko do kawy", "Torebki", "Chusteczki", "Papier rolka zielony", 
+			"Widelczyki", "Rękawiczki jednorazowe", "Worki na śmieci", "Mydło w płynie", "Płyn do mycia naczyń", "Płyn do szyb", "Baktosan", "Gąbka do zmywania"};
+	private JLabel lGospodarczy[] = new JLabel[iloscGospodarczych];
+	private JLabel lIloscGospodarczych[] = new JLabel[iloscGospodarczych];
+	private JTextField tZmienIloscGospodarczych[] = new JTextField[iloscGospodarczych];
+	private double stanGospodarczych[] = new double [iloscGospodarczych];
+	private double zuzyteGospodarcze[] = new double [iloscGospodarczych];
+	private boolean czyGospodarcze = false;
+	
+	//zmienne do sosow
+	private static int iloscSosow = 13;
+	private String Sosy[] = {"MadDog160", "MadDog600", "MadDog750", "Czosnkowy", "Serowe Chili", "Ketchup", "Hamburgerowy", "Arabski Pikantny",
+			"Tysiąca Wysp", "Amerykański", "Salsa Mexicana", "Gyros", "Barbecue"};
+	private JLabel lSos[] = new JLabel[iloscSosow];
+	private JLabel lIloscSosow[] = new JLabel[iloscSosow];
+	private JTextField tZmienIloscSosow[] = new JTextField[iloscSosow];
+	private double stanSosow[] = new double [iloscSosow];
+	private double zuzyteSosy[] = new double [iloscSosow];
+	private boolean czySosy = false;
+	
+	//zmienne do napoi
+	private static int iloscNapoi = 8;
+	private String Napoje[] = {"Woda gazowana", "Woda niegazowana", "Coca-cola", "Coca-cola Zero", "Pepsi", "Tymbark", "Energetyk Black", "Maślanka"};
+	private JLabel lNapoj[] = new JLabel[iloscNapoi];
+	private JLabel lIloscNapoi[] = new JLabel[iloscNapoi];
+	private JTextField tZmienIloscNapoi[] = new JTextField[iloscNapoi];
+	private int stanNapoi[] = new int[iloscNapoi];
+	private int zuzyteNapoje[] = new int [iloscNapoi];
+	private boolean czyNapoje = false;
+	
+	
+	private JButton bCofnij, bWczytajRaport, bWroc, bZmienStan, bOK, bPokazSpozywcze, bPokazDodatki, bPokazSosy, bPokazNapoje;
+	private JButton klawiatura[] = new JButton [13];
+	private String liczby [] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "-"};
+	int foc = -1;
+	private JLabel bg;
+	private JTextArea taWczytanyRaport;
+	private JScrollPane spWczytany;
+	private static int iloscPotraw = 10;
+	private int sprzedanePotrawy[] = new int [iloscPotraw];//mb db mq dq mqs dqs mf df hw kb
+	
+	private ImageIcon b1 = new ImageIcon("grafika/klawNum/b1.jpg");	
+	private ImageIcon b2 = new ImageIcon("grafika/klawNum/b2.jpg");
+	private ImageIcon b3 = new ImageIcon("grafika/klawNum/b3.jpg");
+	private ImageIcon b4 = new ImageIcon("grafika/klawNum/b4.jpg");
+	private ImageIcon b5 = new ImageIcon("grafika/klawNum/b5.jpg");
+	private ImageIcon b6 = new ImageIcon("grafika/klawNum/b6.jpg");
+	private ImageIcon b7 = new ImageIcon("grafika/klawNum/b7.jpg");
+	private ImageIcon b8 = new ImageIcon("grafika/klawNum/b8.jpg");
+	private ImageIcon b9 = new ImageIcon("grafika/klawNum/b9.jpg");
+	private ImageIcon bkrop = new ImageIcon("grafika/klawNum/bKropka.jpg");
+	private ImageIcon b10 = new ImageIcon("grafika/klawNum/b10.jpg");
+	private ImageIcon bmin = new ImageIcon("grafika/klawNum/bMinus.jpg");
+	private ImageIcon bkas = new ImageIcon("grafika/klawNum/bC.jpg");
+	private ImageIcon klawNum[] = {b1, b2, b3, b4, b5, b6, b7, b8, b9, bkrop, b10, bmin, bkas}; 
+
+	public Magazyn(JFrame owner){
+		
+		super(owner, "OzdApp", true);
+		setSize(1280,800);
+		setLayout(null);
+		setUndecorated(true);
+		
+		ImageIcon pokspo = new ImageIcon("grafika/bPokazSpozywcze.jpg");
+		bPokazSpozywcze = new JButton(pokspo);
+		bPokazSpozywcze.setBounds(70, 20, 500, 166);
+		bPokazSpozywcze.addMouseListener(this);
+		add(bPokazSpozywcze);
+		
+		ImageIcon pokdod = new ImageIcon("grafika/bPokazDodatki.jpg");
+		bPokazDodatki = new JButton(pokdod);
+		bPokazDodatki.setBounds(70, 206, 500, 166);
+		bPokazDodatki.addMouseListener(this);
+		add(bPokazDodatki);
+		
+		ImageIcon poksos = new ImageIcon("grafika/bPokazSosy.jpg");
+		bPokazSosy = new JButton(poksos);
+		bPokazSosy.setBounds(70, 392, 500, 166);
+		bPokazSosy.addMouseListener(this);
+		add(bPokazSosy);
+		
+		ImageIcon poknap = new ImageIcon("grafika/bPokazNapoje.jpg");
+		bPokazNapoje = new JButton(poknap);
+		bPokazNapoje.setBounds(70, 578, 500, 166);
+		bPokazNapoje.addMouseListener(this);
+		add(bPokazNapoje);
+		
+		taWczytanyRaport = new JTextArea();
+		taWczytanyRaport.setWrapStyleWord(true);
+		taWczytanyRaport.setEditable(false);
+		taWczytanyRaport.setFont(new Font("Sans-serif", Font.CENTER_BASELINE, 20));
+		spWczytany = new JScrollPane(taWczytanyRaport);
+		spWczytany.setBounds(20, 20, 600, 760);
+		spWczytany.setVisible(false);
+		add(spWczytany);
+		
+		ImageIcon ok = new ImageIcon("grafika/bOK.jpg");
+		bOK = new JButton(ok);
+		bOK.setBounds(700, 392, 500, 166);
+		bOK.setVisible(false);
+		bOK.addMouseListener(this);
+		add(bOK);
+		
+		ImageIcon zmstan = new ImageIcon("grafika/bZmienStan.jpg");
+		bZmienStan = new JButton(zmstan);
+		bZmienStan.setBounds(700, 392, 500, 166);
+		bZmienStan.setVisible(false);
+		bZmienStan.addMouseListener(this);
+		add(bZmienStan);
+		
+		/*ImageIcon rap = new ImageIcon("grafika/bRaport.jpg");
+		bRaport = new JButton(rap);
+		bRaport.setBounds(700, 206, 500, 166);
+		bRaport.addMouseListener(this);
+		add(bRaport);*/
+		
+		ImageIcon wrap = new ImageIcon("grafika/bWczytajRaport.jpg");
+		bWczytajRaport = new JButton(wrap);
+		bWczytajRaport.setBounds(700, 392, 500, 166);
+		bWczytajRaport.addMouseListener(this);
+		add(bWczytajRaport);
+		
+		ImageIcon wroc = new ImageIcon("grafika/bWroc.jpg");
+		bWroc = new JButton(wroc);
+		bWroc.setBounds(700, 392, 500, 166);
+		bWroc.addMouseListener(this);
+		bWroc.setVisible(false);
+		add(bWroc);
+		
+		ImageIcon cof = new ImageIcon("grafika/bCofnij.jpg");
+		bCofnij = new JButton(cof);
+		bCofnij.setBounds(700, 578, 500, 166);
+		bCofnij.addMouseListener(this);
+		add(bCofnij);
+		
+		for (int i=0;i<14;i++){
+			lSpozywczy[i] = new JLabel(spozywcze[i]);
+			lSpozywczy[i].setBounds(20, 20+(i*45), 220, 45);
+			lSpozywczy[i].setForeground(new java.awt.Color(250, 250, 250));
+			lSpozywczy[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lSpozywczy[i]);
+			lSpozywczy[i].setVisible(false);
+			
+			
+			lIloscSpozywczych[i] = new JLabel("0.0");
+			lIloscSpozywczych[i].setBounds(240, 20+(i*45), 80, 45);
+			lIloscSpozywczych[i].setForeground(new java.awt.Color(250, 250, 250));
+			lIloscSpozywczych[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lIloscSpozywczych[i]);
+			lIloscSpozywczych[i].setVisible(false);
+			
+			tZmienIloscSpozywczych[i] = new JTextField("");
+			tZmienIloscSpozywczych[i].setBackground(new java.awt.Color(250, 250, 250));
+			tZmienIloscSpozywczych[i].setForeground(new java.awt.Color(5, 5, 5));
+			tZmienIloscSpozywczych[i].setBounds(240, 30+(i*45), 80, 30);
+			tZmienIloscSpozywczych[i].setVisible(false);
+			tZmienIloscSpozywczych[i].addMouseListener(this);
+			add(tZmienIloscSpozywczych[i]);
+		}	
+		
+		for (int i=14;i<iloscSpozywczych;i++){
+			lSpozywczy[i] = new JLabel(spozywcze[i]);
+			lSpozywczy[i].setBounds(330, 20+((i-14)*45), 220, 45);
+			lSpozywczy[i].setForeground(new java.awt.Color(250, 250, 250));
+			lSpozywczy[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lSpozywczy[i]);
+			lSpozywczy[i].setVisible(false);
+			
+			lIloscSpozywczych[i] = new JLabel("0.0");
+			lIloscSpozywczych[i].setBounds(550, 20+((i-14)*45), 80, 45);
+			lIloscSpozywczych[i].setForeground(new java.awt.Color(250, 250, 250));
+			lIloscSpozywczych[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lIloscSpozywczych[i]);
+			lIloscSpozywczych[i].setVisible(false);
+			
+			tZmienIloscSpozywczych[i] = new JTextField("");
+			tZmienIloscSpozywczych[i].setBackground(new java.awt.Color(250, 250, 250));
+			tZmienIloscSpozywczych[i].setForeground(new java.awt.Color(5, 5, 5));
+			tZmienIloscSpozywczych[i].setBounds(550, 30+((i-14)*45), 80, 30);
+			tZmienIloscSpozywczych[i].setVisible(false);
+			tZmienIloscSpozywczych[i].addMouseListener(this);
+			add(tZmienIloscSpozywczych[i]);
+		}
+			
+		for (int i=0;i<14;i++){
+			lGospodarczy[i] = new JLabel(gospodarcze[i]);
+			lGospodarczy[i].setBounds(20, 20+(i*45), 220, 45);
+			lGospodarczy[i].setForeground(new java.awt.Color(250, 250, 250));
+			lGospodarczy[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lGospodarczy[i]);
+			lGospodarczy[i].setVisible(false);
+			
+			lIloscGospodarczych[i] = new JLabel("0.0");
+			lIloscGospodarczych[i].setBounds(240, 20+(i*45), 80, 45);
+			lIloscGospodarczych[i].setForeground(new java.awt.Color(250, 250, 250));
+			lIloscGospodarczych[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lIloscGospodarczych[i]);
+			lIloscGospodarczych[i].setVisible(false);
+			
+			tZmienIloscGospodarczych[i] = new JTextField("");
+			tZmienIloscGospodarczych[i].setBackground(new java.awt.Color(250, 250, 250));
+			tZmienIloscGospodarczych[i].setForeground(new java.awt.Color(5, 5, 5));
+			tZmienIloscGospodarczych[i].setBounds(240, 30+(i*45), 80, 30);
+			tZmienIloscGospodarczych[i].setVisible(false);
+			tZmienIloscGospodarczych[i].addMouseListener(this);
+			add(tZmienIloscGospodarczych[i]);
+		}	
+		
+		for (int i=14;i<iloscGospodarczych;i++){
+			lGospodarczy[i] = new JLabel(gospodarcze[i]);
+			lGospodarczy[i].setBounds(330, 20+((i-14)*45), 180, 45);
+			lGospodarczy[i].setForeground(new java.awt.Color(250, 250, 250));
+			lGospodarczy[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lGospodarczy[i]);
+			lGospodarczy[i].setVisible(false);
+			
+			lIloscGospodarczych[i] = new JLabel("0.0");
+			lIloscGospodarczych[i].setBounds(550, 20+((i-14)*45), 80, 45);
+			lIloscGospodarczych[i].setForeground(new java.awt.Color(250, 250, 250));
+			lIloscGospodarczych[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lIloscGospodarczych[i]);
+			lIloscGospodarczych[i].setVisible(false);
+			
+			tZmienIloscGospodarczych[i] = new JTextField("");
+			tZmienIloscGospodarczych[i].setBackground(new java.awt.Color(250, 250, 250));
+			tZmienIloscGospodarczych[i].setForeground(new java.awt.Color(5, 5, 5));
+			tZmienIloscGospodarczych[i].setBounds(550, 30+((i-34)*45), 80, 30);
+			tZmienIloscGospodarczych[i].setVisible(false);
+			tZmienIloscGospodarczych[i].addMouseListener(this);
+			add(tZmienIloscGospodarczych[i]);
+		}
+		
+		
+		for (int i=0;i<iloscSosow;i++) {
+			lSos[i] = new JLabel(Sosy[i]);
+			lSos[i].setBounds(20, 20+(i*45), 220, 45);
+			lSos[i].setForeground(new java.awt.Color(250, 250, 250));
+			lSos[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lSos[i]);
+			lSos[i].setVisible(false);
+			
+			lIloscSosow[i] = new JLabel("0.0");
+			lIloscSosow[i].setBounds(240, 20+(i*45), 80, 45);
+			lIloscSosow[i].setForeground(new java.awt.Color(250, 250, 250));
+			lIloscSosow[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lIloscSosow[i]);
+			lIloscSosow[i].setVisible(false);
+			
+			tZmienIloscSosow[i] = new JTextField("");
+			tZmienIloscSosow[i].setBackground(new java.awt.Color(250, 250, 250));
+			tZmienIloscSosow[i].setForeground(new java.awt.Color(5, 5, 5));
+			tZmienIloscSosow[i].setBounds(240, 30+(i*45), 80, 30);
+			tZmienIloscSosow[i].setVisible(false);
+			tZmienIloscSosow[i].addMouseListener(this);
+			add(tZmienIloscSosow[i]);
+		}
+		
+		for (int i=0;i<iloscNapoi;i++) {
+			lNapoj[i] = new JLabel(Napoje[i]);
+			lNapoj[i].setBounds(20, 20+(i*45), 220, 45);
+			lNapoj[i].setForeground(new java.awt.Color(250, 250, 250));
+			lNapoj[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lNapoj[i]);
+			lNapoj[i].setVisible(false);
+			
+			lIloscNapoi[i] = new JLabel("0");
+			lIloscNapoi[i].setBounds(240, 20+(i*45), 80, 45);
+			lIloscNapoi[i].setForeground(new java.awt.Color(250, 250, 250));
+			lIloscNapoi[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lIloscNapoi[i]);
+			lIloscNapoi[i].setVisible(false);
+			
+			tZmienIloscNapoi[i] = new JTextField("");
+			tZmienIloscNapoi[i].setBackground(new java.awt.Color(250, 250, 250));
+			tZmienIloscNapoi[i].setForeground(new java.awt.Color(5, 5, 5));
+			tZmienIloscNapoi[i].setBounds(240, 30+(i*45), 80, 30);
+			tZmienIloscNapoi[i].setVisible(false);
+			tZmienIloscNapoi[i].addMouseListener(this);
+			add(tZmienIloscNapoi[i]);
+		}
+		
+		for (int i=0; i<13; i++){			
+			klawiatura[i] = new JButton(klawNum[i]);
+			klawiatura[i].addMouseListener(this);
+			klawiatura[i].setVisible(false);
+			add(klawiatura[i]);
+		}
+		
+		
+		
+		int x = 140;
+		klawiatura[0].setBounds(x+700, 20, 60, 60);
+		klawiatura[1].setBounds(x+770, 20, 60, 60);
+		klawiatura[2].setBounds(x+840, 20, 60, 60);
+		klawiatura[3].setBounds(x+700, 90, 60, 60);
+		klawiatura[4].setBounds(x+770, 90, 60, 60);
+		klawiatura[5].setBounds(x+840, 90, 60, 60);
+		klawiatura[6].setBounds(x+700, 160, 60, 60);
+		klawiatura[7].setBounds(x+770, 160, 60, 60);
+		klawiatura[8].setBounds(x+840, 160, 60, 60);
+		klawiatura[9].setBounds(x+700, 230, 60, 60);
+		klawiatura[10].setBounds(x+770, 230, 60, 60);
+		klawiatura[11].setBounds(x+840, 230, 60, 60);
+		klawiatura[12].setBounds(x+910, 230, 60, 60);
+		
+	
+		bg=new JLabel(new ImageIcon("grafika/tlo.jpg"));
+		bg.setBounds(0,0,1280,800);
+		bg.setOpaque(true);
+		add(bg);
+	
+	}
+	
+	public void pokazSpozywcze(boolean x){
+		for (int i=0;i<iloscSpozywczych;i++){
+			lSpozywczy[i].setVisible(x);
+			lIloscSpozywczych[i].setVisible(x);
+			
+		}
+		bZmienStan.setVisible(x);
+		bOK.setVisible(!x);
+		bWczytajRaport.setVisible(!x);
+	}
+	
+	public void pokazTZmienSpozywcze(boolean x){
+		for (int i=0; i<iloscSpozywczych; i++){
+			lSpozywczy[i].setVisible(x);
+			tZmienIloscSpozywczych[i].setVisible(x);
+		}
+		bOK.setVisible(x);
+		bZmienStan.setVisible(!x);
+		bWczytajRaport.setVisible(!x);
+		for (int i=0;i<13;i++) klawiatura[i].setVisible(x);
+	}
+	
+	
+	
+	
+	
+	public void pokazGospodarcze(boolean x){
+		for (int i=0;i<iloscGospodarczych;i++){
+			lGospodarczy[i].setVisible(x);
+			lIloscGospodarczych[i].setVisible(x);
+		}
+		bZmienStan.setVisible(x);
+		bOK.setVisible(!x);
+		bWczytajRaport.setVisible(!x);
+	}
+	
+	public void pokazTZmienGospodarcze(boolean x){
+		for (int i=0; i<iloscGospodarczych; i++){
+			lGospodarczy[i].setVisible(x);
+			tZmienIloscGospodarczych[i].setVisible(x);
+		}
+		bOK.setVisible(x);
+		bZmienStan.setVisible(!x);
+		bWczytajRaport.setVisible(!x);
+		for (int i=0;i<13;i++) klawiatura[i].setVisible(x);
+	}
+	
+	
+	
+	
+	
+	
+	public void pokazSosy(boolean x){
+		for (int i=0;i<iloscSosow;i++){
+			lSos[i].setVisible(x);
+			lIloscSosow[i].setVisible(x);
+		}
+		bZmienStan.setVisible(x);
+		bOK.setVisible(!x);
+		bWczytajRaport.setVisible(!x);
+	}
+	
+	public void pokazTZmienSosy(boolean x){
+		for (int i=0; i<iloscSosow; i++){
+			lSos[i].setVisible(x);
+			tZmienIloscSosow[i].setVisible(x);	
+		}
+		bOK.setVisible(x);
+		bZmienStan.setVisible(!x);
+		bWczytajRaport.setVisible(!x);
+		for (int i=0;i<13;i++) klawiatura[i].setVisible(x);
+	}
+	
+	
+	
+	
+	
+	
+	public void pokazNapoje(boolean x){
+		for (int i=0;i<iloscNapoi;i++){
+			lNapoj[i].setVisible(x);
+			lIloscNapoi[i].setVisible(x);
+		}
+		bZmienStan.setVisible(x);
+		bOK.setVisible(!x);
+		bWczytajRaport.setVisible(!x);
+	}
+	
+	public void pokazTZmienNapoje(boolean x){
+		for (int i=0; i<iloscNapoi; i++){
+			lNapoj[i].setVisible(x);
+			tZmienIloscNapoi[i].setVisible(x);	
+		}
+		bZmienStan.setVisible(!x);
+		bWczytajRaport.setVisible(!x);
+		bOK.setVisible(x);
+		for (int i=0;i<13;i++) klawiatura[i].setVisible(x);
+	}
+	
+	public void pokazGlowne(boolean x){
+		bPokazSpozywcze.setVisible(x);
+		bPokazDodatki.setVisible(x);
+		bPokazSosy.setVisible(x);
+		bPokazNapoje.setVisible(x);
+		//bRaport.setVisible(x);
+	}
+	
+	
+	public int getSprzedanePotrawy(int x){
+		return sprzedanePotrawy[x];
+	}
+	public void setSprzedanePotrawy(int x, int y){
+		sprzedanePotrawy[y] = x;
+	}
+	
+	
+	
+	
+	public double getSpozywczy(int x){
+		return stanSpozywczych[x];
+	}
+	
+	public void setSpozywczy(double x, int y){
+		stanSpozywczych[y] = x;
+	}
+	
+	public double getZuzyteSpozywcze(int x){
+		return zuzyteSpozywcze[x];
+	}
+	
+	public void setZuzyteSpozywcze(double x, int y){
+		zuzyteSpozywcze[y] = x;
+	}
+	
+	
+	
+	
+	public double getGospodarczy(int x){
+		return stanGospodarczych[x];
+	}
+	
+	public void setGospodarczy(double x, int y){
+		stanGospodarczych[y] = x;
+	}
+	
+	public double getZuzyteGospodarcze(int x){
+		return zuzyteGospodarcze[x];
+	}
+	
+	public void setZuzyteGospodarcze(double x, int y){
+		zuzyteGospodarcze[y] = x;
+	}
+
+
+	
+	
+	
+ 	public double getSos(int x){
+		return stanSosow[x];
+	}
+	
+ 	public void setSos(double x, int y){
+		stanSosow[y] = x;
+	}
+ 	
+ 	public double getZuzyteSosy(int x){
+		return zuzyteSosy[x];
+	}
+	
+	public void setZuzyteSosy(double x, int y){
+		zuzyteSosy[y] = x;
+	}
+	
+	
+	
+	
+	public int getNapoj(int x){
+		return stanNapoi[x];
+	}
+	
+	public void setNapoj(int x, int y){
+		stanNapoi[y] = x;
+	}
+	
+	public int getZuzyteNapoje(int x){
+		return zuzyteNapoje[x];
+	}
+	
+	public void setZuzyteNapoje(int x, int y){
+		zuzyteNapoje[y] = x;
+	}
+	
+	
+	
+	
+	public int getIloscSpozywczych(){
+		return iloscSpozywczych;
+	}
+	
+	public int getIloscGospodarczych(){
+		return iloscGospodarczych;
+	}
+	
+	public int getIloscSosow(){
+		return iloscSosow;
+	}
+	
+	public int getIloscNapoi(){
+		return iloscNapoi;
+	}
+	public int getIloscPotraw(){
+		return iloscPotraw;
+	}
+	
+	
+	
+	public void pokazWczytanyRaport(boolean x){
+		bPokazSpozywcze.setVisible(!x);
+		bPokazDodatki.setVisible(!x);
+		bPokazSosy.setVisible(!x);
+		bPokazNapoje.setVisible(!x);
+		bWczytajRaport.setVisible(!x);
+		bWroc.setVisible(x);
+		spWczytany.setVisible(x);
+	}
+	
+	public boolean isNumeric(String str)  //zwraca true jesli string jest liczba lub false jesli nie jest liczba
+	{  
+	  try  
+	  {  
+		  Double.parseDouble(str);  
+	  }  
+	  catch(NumberFormatException nfe)  
+	  {  
+	    return false;  
+	  }  
+	  return true;  
+	}
+	
+	public void sprawdzTowar(JTextArea x){
+			
+		for (String line : x.getText().split("\\n")) {
+			for (String przec : line.split(",")){
+				if (przec.equals("MBL")) burritoMaleLagodne();
+				else if (przec.equals("MBO")) burritoMaleOstre();
+				else if (przec.equals("DBL")) burritoDuzeLagodne();
+				else if (przec.equals("DBO")) burritoDuzeOstre();
+				else if (przec.equals("MBM")) burritoMaleMieszane();
+				else if (przec.equals("DBM")) burritoDuzeMieszane();
+				else if (przec.equals("MQ")) qurittoMale();
+				else if (przec.equals("DQ")) qurittoDuze();
+				else if (przec.equals("MQSL")) quesadillaMalaLagodna();
+				else if (przec.equals("MQSO")) quesadillaMalaOstra();
+				else if (przec.equals("DQSL")) quesadillaDuzaLagodna();
+				else if (przec.equals("DQSO")) quesadillaDuzaOstra();
+				else if (przec.equals("MQSM")) quesadillaMalaMieszana();
+				else if (przec.equals("DQSM")) quesadillaDuzaMieszana();
+				else if (przec.equals("MF")) frytkiMale();
+				else if (przec.equals("DF")) frytkiDuze();
+				else if (przec.equals("HW")) hamburgerWolowy();
+				else if (przec.equals("KB")) kurczakoBurger();
+				
+				//kolejne SOSY!
+				if (przec.equals("md160")) {stanSosow[0]-=0.3; zuzyteSosy[0]+=0.3;}
+				else if (przec.equals("md600")) {stanSosow[1]-=0.3; zuzyteSosy[1]+=0.3;}
+				else if (przec.equals("md750")) {stanSosow[2]-=0.3; zuzyteSosy[2]+=0.3;}
+				else if (przec.equals("czo")) {stanSosow[3]-=0.3; zuzyteSosy[3]+=0.3;}
+				else if (przec.equals("ser")) {stanSosow[4]-=0.3; zuzyteSosy[4]+=0.3;}
+				else if (przec.equals("ket")) {stanSosow[5]-=0.3; zuzyteSosy[5]+=0.3;}
+				else if (przec.equals("ham")) {stanSosow[6]-=0.3; zuzyteSosy[6]+=0.3;}
+				else if (przec.equals("arb")) {stanSosow[7]-=0.3; zuzyteSosy[7]+=0.3;}
+				else if (przec.equals("wsp")) {stanSosow[8]-=0.3; zuzyteSosy[8]+=0.3;}
+				else if (przec.equals("ame")) {stanSosow[9]-=0.3; zuzyteSosy[9]+=0.3;}
+				else if (przec.equals("mex")) {stanSosow[10]-=0.3; zuzyteSosy[10]+=0.3;}
+				else if (przec.equals("gyr")) {stanSosow[11]-=0.3; zuzyteSosy[11]+=0.3;}
+				else if (przec.equals("bbq")) {stanSosow[12]-=0.3; zuzyteSosy[12]+=0.3;}
+				//a moze napoj?
+				if (przec.equals("Woda gazowana")) {stanNapoi[0]-=1; zuzyteNapoje[0]+=1;}
+				else if (przec.equals("Woda niegazowana")) {stanNapoi[1]-=1; zuzyteNapoje[1]+=1;}
+				else if (przec.equals("Coca-Cola")) {stanNapoi[2]-=1; zuzyteNapoje[2]+=1;}
+				else if (przec.equals("Coca-Cola Zero")) {stanNapoi[3]-=1; zuzyteNapoje[3]+=1;}
+				else if (przec.equals("Pepsi")) {stanNapoi[4]-=1; zuzyteNapoje[4]+=1;}
+				else if (przec.equals("Tymbark")) {stanNapoi[5]-=1; zuzyteNapoje[5]+=1;}
+				else if (przec.equals("Black")) {stanNapoi[6]-=1; zuzyteNapoje[6]+=1;}
+				else if (przec.equals("Maślanka")) {stanNapoi[7]-=1; zuzyteNapoje[7]+=1;}
+			}
+		}
+	}
+	
+	public void sprawdzDostawa(JTextArea x){
+		for (String line : x.getText().split("\\n")) {
+			if (line.substring(0, 3).equals("MBL")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 3).equals("MBO")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 3).equals("DBL")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 3).equals("DBO")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 3).equals("MBM")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 3).equals("DBM")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 2).equals("MQ")) {stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 2).equals("DQ")) {stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 4).equals("MQSL")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 4).equals("MQSO")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 4).equals("DQSL")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 4).equals("DQSO")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 4).equals("MQSM")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 4).equals("DQSM")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 2).equals("MF")) {stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[6]-=1.0; zuzyteGospodarcze[6]+=1.0;}
+			else if (line.substring(0, 2).equals("DF")) {stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[6]-=1.0; zuzyteGospodarcze[6]+=1.0;}
+			else if (line.substring(0, 2).equals("HW")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+			else if (line.substring(0, 2).equals("KB")) {stanGospodarczych[0]-=0.1; zuzyteGospodarcze[0]+=0.1;stanGospodarczych[9]-=1.0; zuzyteGospodarcze[9]+=1.0;}
+		}
+	}
+	
+	public double zaokragl(double x){
+		x *= 100;
+        x = Math.round(x);
+        return x /= 100;
+	}
+	
+	public void zaokraglWszystko(){
+		for (int i=0; i<iloscSpozywczych; i++) {
+			stanSpozywczych[i] = zaokragl(stanSpozywczych[i]);
+		}
+		
+		for (int i=0; i<iloscGospodarczych; i++) {
+			stanGospodarczych[i] = zaokragl(stanGospodarczych[i]);
+		}
+		
+		for (int i=0; i<iloscSosow; i++) {
+			stanSosow[i] = zaokragl(stanSosow[i]);
+		}
+	}
+	
+	public void ustawSkladniki() {
+		for (int i=0; i<iloscSpozywczych; i++) {
+			lIloscSpozywczych[i].setText(String.valueOf(stanSpozywczych[i]));
+		}
+		
+		for (int i=0; i<iloscGospodarczych; i++) {
+			lIloscGospodarczych[i].setText(String.valueOf(stanGospodarczych[i]));
+		}
+		
+		for (int i=0; i<iloscSosow; i++) {
+			lIloscSosow[i].setText(String.valueOf(stanSosow[i]));
+		}
+		
+		for (int i=0; i<iloscNapoi; i++) {
+			lIloscNapoi[i].setText(String.valueOf(stanNapoi[i]));
+		}
+	}
+	
+	
+	
+	
+//-----------------------------------BURRITO-----------------------------------------------------	
+	
+	public void burritoMaleLagodne(){
+		stanSpozywczych[1]-=1.0;	//tortilla 25cm
+		zuzyteSpozywcze[1]+=1.0;
+		stanSpozywczych[17]-=0.25; //jogurt
+		zuzyteSpozywcze[17]+=0.25;
+		stanSpozywczych[10]-=0.25;	//lagodna salsa
+		zuzyteSpozywcze[10]+=0.25;
+		stanSpozywczych[6]-=0.25;	//mieso wieprzowo-wolowe
+		zuzyteSpozywcze[6]+=0.25;
+		stanSpozywczych[12]-=0.25;	//kukurydza
+		zuzyteSpozywcze[12]+=0.25;
+		stanSpozywczych[13]-=0.25;	//fasola
+		zuzyteSpozywcze[13]+=0.25;
+		stanSpozywczych[15]-=0.25;	//ryz
+		zuzyteSpozywcze[15]+=0.25;
+		stanGospodarczych[0]-=0.25;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.25;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[0]++;
+	}
+	
+	public void burritoMaleOstre(){
+		stanSpozywczych[1]-=1.0;	//tortilla 25cm
+		zuzyteSpozywcze[1]+=1.0;
+		stanSpozywczych[17]-=0.25; //jogurt
+		zuzyteSpozywcze[17]+=0.25;
+		stanSpozywczych[11]-=0.25;	//ostra salsa
+		zuzyteSpozywcze[11]+=0.25;
+		stanSpozywczych[6]-=0.25;	//mieso wieprzowo-wolowe
+		zuzyteSpozywcze[6]+=0.25;
+		stanSpozywczych[12]-=0.25;	//kukurydza
+		zuzyteSpozywcze[12]+=0.25;
+		stanSpozywczych[13]-=0.25;	//fasola
+		zuzyteSpozywcze[13]+=0.25;
+		stanSpozywczych[15]-=0.25;	//ryz
+		zuzyteSpozywcze[15]+=0.25;
+		stanGospodarczych[0]-=0.25;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.25;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[0]++;
+	}
+	
+	public void burritoDuzeLagodne(){
+		stanSpozywczych[2]-=1.0;	//tortilla 30cm
+		zuzyteSpozywcze[2]+=1.0;
+		stanSpozywczych[17]-=0.5; //jogurt
+		zuzyteSpozywcze[17]+=0.5;
+		stanSpozywczych[10]-=0.5;	//lagodna salsa
+		zuzyteSpozywcze[10]+=0.5;
+		stanSpozywczych[6]-=0.5;	//mieso wieprzowo-wolowe
+		zuzyteSpozywcze[6]+=0.5;
+		stanSpozywczych[12]-=0.5;	//kukurydza
+		zuzyteSpozywcze[12]+=0.5;
+		stanSpozywczych[13]-=0.5;	//fasola
+		zuzyteSpozywcze[13]+=0.5;
+		stanSpozywczych[15]-=0.5;	//ryz
+		zuzyteSpozywcze[15]+=0.5;
+		stanGospodarczych[0]-=0.5;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.5;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[1]++;
+	}
+	
+	public void burritoDuzeOstre(){
+		stanSpozywczych[2]-=1.0;	//tortilla 30cm
+		zuzyteSpozywcze[2]+=1.0;
+		stanSpozywczych[17]-=0.5; //jogurt
+		zuzyteSpozywcze[17]+=0.5;
+		stanSpozywczych[11]-=0.5;	//ostra salsa
+		zuzyteSpozywcze[11]+=0.5;
+		stanSpozywczych[6]-=0.5;	//mieso wieprzowo-wolowe
+		zuzyteSpozywcze[6]+=0.5;
+		stanSpozywczych[12]-=0.5;	//kukurydza
+		zuzyteSpozywcze[12]+=0.5;
+		stanSpozywczych[13]-=0.5;	//fasola
+		zuzyteSpozywcze[13]+=0.5;
+		stanSpozywczych[15]-=0.5;	//ryz
+		zuzyteSpozywcze[15]+=0.5;
+		stanGospodarczych[0]-=0.5;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.5;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[1]++;
+	}
+	
+	public void burritoMaleMieszane(){
+		stanSpozywczych[1]-=1.0;	//tortilla 25cm
+		zuzyteSpozywcze[1]+=1.0;
+		stanSpozywczych[17]-=0.25; //jogurt
+		zuzyteSpozywcze[17]+=0.25;
+		stanSpozywczych[10]-=0.126;	//lagodna salsa
+		zuzyteSpozywcze[10]+=0.126;
+		stanSpozywczych[11]-=0.25;	//ostra salsa
+		zuzyteSpozywcze[11]+=0.25;
+		stanSpozywczych[6]-=0.25;	//mieso wieprzowo-wolowe
+		zuzyteSpozywcze[6]+=0.25;
+		stanSpozywczych[12]-=0.25;	//kukurydza
+		zuzyteSpozywcze[12]+=0.25;
+		stanSpozywczych[13]-=0.25;	//fasola
+		zuzyteSpozywcze[13]+=0.25;
+		stanSpozywczych[15]-=0.25;	//ryz
+		zuzyteSpozywcze[15]+=0.25;
+		stanGospodarczych[0]-=0.25;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.25;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[0]++;
+	}
+	
+	public void burritoDuzeMieszane(){
+		stanSpozywczych[2]-=1.0;	//tortilla 30cm
+		zuzyteSpozywcze[2]+=1.0;
+		stanSpozywczych[17]-=0.5; //jogurt
+		zuzyteSpozywcze[17]+=0.5;
+		stanSpozywczych[10]-=0.25;	//lagodna salsa
+		zuzyteSpozywcze[10]+=0.25;
+		stanSpozywczych[11]-=0.25;	//ostra salsa
+		zuzyteSpozywcze[11]+=0.25;
+		stanSpozywczych[6]-=0.5;	//mieso wieprzowo-wolowe
+		zuzyteSpozywcze[6]+=0.5;
+		stanSpozywczych[12]-=0.5;	//kukurydza
+		zuzyteSpozywcze[12]+=0.5;
+		stanSpozywczych[13]-=0.5;	//fasola
+		zuzyteSpozywcze[13]+=0.5;
+		stanSpozywczych[15]-=0.5;	//ryz
+		zuzyteSpozywcze[15]+=0.5;
+		stanGospodarczych[0]-=0.5;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.5;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[1]++;
+	}
+//------------------------------------------QURITTO-----------------------------------
+	public void qurittoMale(){
+		stanSpozywczych[1]-=1.0;	//tortilla 25cm
+		zuzyteSpozywcze[1]+=1.0;
+		stanSpozywczych[5]-=0.25;	//ser wior
+		zuzyteSpozywcze[5]+=0.25;
+		stanSpozywczych[7]-=0.25;	//kurczak
+		zuzyteSpozywcze[7]+=0.25;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		stanGospodarczych[3]-=1.0;	//pudelko quritto
+		zuzyteGospodarcze[3]+=1.0;
+		
+		sprzedanePotrawy[2]++;
+	}
+	
+	public void qurittoDuze(){
+		stanSpozywczych[2]-=1.0;	//tortilla 30cm
+		zuzyteSpozywcze[2]+=1.0;
+		stanSpozywczych[5]-=0.5;	//ser wior
+		zuzyteSpozywcze[5]+=0.5;
+		stanSpozywczych[7]-=0.5;	//kurczak
+		zuzyteSpozywcze[7]+=0.5;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		stanGospodarczych[3]-=1.0;	//pudelko quritto
+		zuzyteGospodarcze[3]+=1.0;
+		
+		sprzedanePotrawy[3]++;
+	}
+//----------------------------------------QUESADILLA-----------------------------------
+	public void quesadillaMalaLagodna(){
+		stanSpozywczych[1]-=1.0;	//tortilla 25cm
+		zuzyteSpozywcze[1]+=1.0;
+		stanSpozywczych[7]-=0.25;	//kurczak
+		zuzyteSpozywcze[7]+=0.25;
+		stanSpozywczych[10]-=0.25;	//salsa lagodna
+		zuzyteSpozywcze[10]+=0.25;
+		stanSpozywczych[12]-=0.25;	//kukurydza
+		zuzyteSpozywcze[12]+=0.25;
+		stanSpozywczych[5]-=0.25;	//ser wiór
+		zuzyteSpozywcze[5]+=0.25;
+		stanGospodarczych[0]-=0.25;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.25;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[4]++;
+	}
+	
+	public void quesadillaMalaOstra(){
+		stanSpozywczych[1]-=1.0;	//tortilla 25cm
+		zuzyteSpozywcze[1]+=1.0;
+		stanSpozywczych[7]-=0.25;	//kurczak
+		zuzyteSpozywcze[7]+=0.25;
+		stanSpozywczych[11]-=0.25;	//salsa ostra
+		zuzyteSpozywcze[11]+=0.25;
+		stanSpozywczych[12]-=0.25;	//kukurydza
+		zuzyteSpozywcze[12]+=0.25;
+		stanSpozywczych[5]-=0.25;	//ser wiór
+		zuzyteSpozywcze[5]+=0.25;
+		stanGospodarczych[0]-=0.25;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.25;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[4]++;
+	}
+	
+	public void quesadillaMalaMieszana(){
+		stanSpozywczych[1]-=1.0;	//tortilla 25cm
+		zuzyteSpozywcze[1]+=1.0;
+		stanSpozywczych[7]-=0.25;	//kurczak
+		zuzyteSpozywcze[7]+=0.25;
+		stanSpozywczych[10]-=0.126;	//salsa lagodna
+		zuzyteSpozywcze[10]+=0.126;
+		stanSpozywczych[11]-=0.126;	//salsa ostra
+		zuzyteSpozywcze[11]+=0.126;
+		stanSpozywczych[12]-=0.25;	//kukurydza
+		zuzyteSpozywcze[12]+=0.25;
+		stanSpozywczych[5]-=0.25;	//ser wiór
+		zuzyteSpozywcze[5]+=0.25;
+		stanGospodarczych[0]-=0.25;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.25;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[4]++;
+	}
+	
+	public void quesadillaDuzaLagodna(){
+		stanSpozywczych[2]-=1.0;	//tortilla 30cm
+		zuzyteSpozywcze[2]+=1.0;
+		stanSpozywczych[7]-=0.5;	//kurczak
+		zuzyteSpozywcze[7]+=0.5;
+		stanSpozywczych[10]-=0.5;	//salsa lagodna
+		zuzyteSpozywcze[10]+=0.5;
+		stanSpozywczych[12]-=0.5;	//kukurydza
+		zuzyteSpozywcze[12]+=0.5;
+		stanSpozywczych[5]-=0.5;	//ser wiór
+		zuzyteSpozywcze[5]+=0.5;
+		stanGospodarczych[0]-=0.5;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.5;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[5]++;
+	}
+	
+	public void quesadillaDuzaOstra(){
+		stanSpozywczych[2]-=1.0;	//tortilla 30cm
+		zuzyteSpozywcze[2]+=1.0;
+		stanSpozywczych[7]-=0.5;	//kurczak
+		zuzyteSpozywcze[7]+=0.5;
+		stanSpozywczych[11]-=0.5;	//salsa ostra
+		zuzyteSpozywcze[11]+=0.5;
+		stanSpozywczych[12]-=0.5;	//kukurydza
+		zuzyteSpozywcze[12]+=0.5;
+		stanSpozywczych[5]-=0.5;	//ser wiór
+		zuzyteSpozywcze[5]+=0.5;
+		stanGospodarczych[0]-=0.5;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.5;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[5]++;
+	}
+		
+	public void quesadillaDuzaMieszana(){
+		stanSpozywczych[2]-=1.0;	//tortilla 30cm
+		zuzyteSpozywcze[2]+=1.0;
+		stanSpozywczych[7]-=0.5;	//kurczak
+		zuzyteSpozywcze[7]+=0.5;
+		stanSpozywczych[10]-=0.25;	//salsa lagodna
+		zuzyteSpozywcze[10]+=0.25;
+		stanSpozywczych[11]-=0.25;	//salsa ostra
+		zuzyteSpozywcze[11]+=0.25;
+		stanSpozywczych[12]-=0.5;	//kukurydza
+		zuzyteSpozywcze[12]+=0.5;
+		stanSpozywczych[5]-=0.5;	//ser wiór
+		zuzyteSpozywcze[5]+=0.5;
+		stanGospodarczych[0]-=0.5;	//folia aluminiowa
+		zuzyteGospodarcze[0]+=0.5;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[5]++;
+	}
+//----------------------------------------------FRYTKI-----------------------------------------------
+	public void frytkiMale(){
+		stanSpozywczych[3]-=0.5;	//frytki
+		zuzyteSpozywcze[3]+=0.5;
+		stanSpozywczych[19]-=0.25;	//sol
+		zuzyteSpozywcze[19]+=0.25;
+		stanGospodarczych[4]-=1.0;	//opakowanie frytki male
+		zuzyteGospodarcze[4]+=1.0;
+		stanGospodarczych[4]-=1.0;	//chusteczka
+		zuzyteGospodarcze[4]+=1.0;
+		stanGospodarczych[12]-=1.0;	//widelczyk
+		zuzyteGospodarcze[12]+=1.0;
+		
+		sprzedanePotrawy[6]++;
+	}
+	
+	public void frytkiDuze(){
+		stanSpozywczych[3]-=1.0;	//frytki
+		zuzyteSpozywcze[3]+=1.0;
+		stanSpozywczych[19]-=0.5;	//sol
+		zuzyteSpozywcze[19]+=0.5;
+		stanGospodarczych[5]-=1.0;	//opakowanie duze
+		zuzyteGospodarcze[5]+=1.0;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		stanGospodarczych[12]-=0.5;	//widelczyk
+		zuzyteGospodarcze[12]+=0.5;
+		
+		sprzedanePotrawy[7]++;
+	}
+//-------------------------------------------BURGERY---------------------------------------------------
+	public void hamburgerWolowy(){
+		stanSpozywczych[0]-=1.0;	//bulka maslana
+		zuzyteSpozywcze[0]+=1.0;
+		stanSpozywczych[4]-=1.0;	//ser plaster
+		zuzyteSpozywcze[4]+=1.0;
+		stanSpozywczych[8]-=1.0;	//burgery wolowe
+		zuzyteSpozywcze[8]+=1.0;
+		stanSpozywczych[14]-=0.5;	//ogorek kiszony
+		zuzyteSpozywcze[14]+=0.5;
+		stanSpozywczych[9]-=0.5;	//mix salat
+		zuzyteSpozywcze[9]+=0.5;
+		stanGospodarczych[2]-=1.0;	//opakowanie burger
+		zuzyteGospodarcze[2]+=1.0;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[8]++;
+	}
+	public void kurczakoBurger(){
+		stanSpozywczych[0]-=1.0;	//bulka maslana
+		zuzyteSpozywcze[0]+=1.0;
+		stanSpozywczych[4]-=1.0;	//ser plaster
+		zuzyteSpozywcze[4]+=1.0;
+		stanSpozywczych[7]-=1.0;	//kurczak
+		zuzyteSpozywcze[7]+=1.0;
+		stanSpozywczych[14]-=0.5;	//ogorek kiszony
+		zuzyteSpozywcze[14]+=0.5;
+		stanSpozywczych[9]-=0.5;	//mix salat
+		zuzyteSpozywcze[9]+=0.5;
+		stanGospodarczych[2]-=1.0;	//opakowanie burger
+		zuzyteGospodarcze[2]+=1.0;
+		stanGospodarczych[10]-=1.0;	//chusteczka
+		zuzyteGospodarcze[10]+=1.0;
+		
+		sprzedanePotrawy[9]++;
+	}
+//-----------------------------------------------------------------------------------------------------
+	
+	public void raport() throws FileNotFoundException{
+		
+		Date currentDate = new Date();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+		//SimpleDateFormat dateFormat2 = new SimpleDateFormat("HH:mm");//zakomentowane linie pozwalaly na dodanie godziny do tytułu raportu
+		String dateString = dateFormat.format(currentDate);
+		//String dateString2 = dateFormat2.format(currentDate);
+		String d = dateString.replace(".", "-");
+		//String g = dateString2.replace(":", ".");
+		
+		
+		String tytul = "Skladniki/Skladniki " + d + ".txt"; //jak bedzie dodawana godzina to dodac po "d": + " " + g
+		
+		PrintWriter zapis = new PrintWriter(tytul);
+		
+		zapis.println("Raport zuzytych składników z dnia " + d + "\n\n");
+		for (int i=0; i<iloscSpozywczych;i++) {
+			String skladnik = spozywcze[i] + " - " + String.valueOf(zaokragl(zuzyteSpozywcze[i]));
+			zapis.println(skladnik);
+		}
+		zapis.println("");
+		for (int i=0; i<iloscGospodarczych;i++) {
+			String skladnik = gospodarcze[i] + " - " + String.valueOf(zaokragl(zuzyteGospodarcze[i]));
+			zapis.println(skladnik);
+		}
+		zapis.println("");
+		for (int i=0; i<iloscSosow;i++) {
+			String skladnik = Sosy[i] + " - " + String.valueOf(zaokragl(zuzyteSosy[i]));
+			zapis.println(skladnik);
+		}
+		zapis.println("");
+		for (int i=0; i<iloscNapoi;i++) {
+			String skladnik = Napoje[i] + " - " + String.valueOf(zaokragl(zuzyteNapoje[i]));
+			zapis.println(skladnik);
+		}
+	    zapis.close();	
+	}
+
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		Object z = e.getSource();
+		
+		if (z==bPokazSpozywcze){
+			pokazGlowne(false);
+			pokazSpozywcze(true);
+			bZmienStan.setVisible(true);
+			czySpozywcze = true;
+		}
+		else if (z==bPokazDodatki){
+			pokazGlowne(false);
+			pokazGospodarcze(true);
+			bZmienStan.setVisible(true);
+			czyGospodarcze = true;
+		}
+		else if (z==bPokazSosy){
+			pokazGlowne(false);
+			pokazSosy(true);
+			bZmienStan.setVisible(true);
+			czySosy = true;
+		}
+		else if (z==bPokazNapoje){
+			pokazGlowne(false);
+			pokazNapoje(true);
+			bZmienStan.setVisible(true);
+			czyNapoje = true;
+		}
+		
+		else if (z==bZmienStan){
+			bZmienStan.setVisible(false);
+			bOK.setVisible(true);
+			
+			if(czySpozywcze==true){
+				pokazSpozywcze(false);
+				pokazTZmienSpozywcze(true);
+			}
+			else if(czyGospodarcze==true){
+				pokazGospodarcze(false);
+				pokazTZmienGospodarcze(true);
+			}
+			else if(czySosy==true){
+				pokazSosy(false);
+				pokazTZmienSosy(true);
+			}
+			else if(czyNapoje==true){
+				pokazNapoje(false);
+				pokazTZmienNapoje(true);
+			}
+			
+			
+			for (int i=0;i<iloscSpozywczych;i++){
+				tZmienIloscSpozywczych[i].setText("");
+			}
+			
+			for (int i=0;i<iloscGospodarczych;i++){
+				tZmienIloscGospodarczych[i].setText("");
+			}
+			
+			for (int i=0;i<iloscSosow;i++){
+				tZmienIloscSosow[i].setText("");
+			}
+			
+			for (int i=0;i<iloscNapoi;i++){
+				tZmienIloscNapoi[i].setText("");
+			}
+
+			
+		}
+		else if(z==bOK){
+			bOK.setVisible(false);
+			bZmienStan.setVisible(true);
+			foc=-1;
+			
+			if(czySpozywcze==true){
+				for (int i=0;i<iloscSpozywczych;i++){
+					if(isNumeric(tZmienIloscSpozywczych[i].getText())) stanSpozywczych[i] += Double.parseDouble(tZmienIloscSpozywczych[i].getText());
+					tZmienIloscSpozywczych[i].setText("");
+				}
+				pokazTZmienSpozywcze(false);
+				pokazSpozywcze(true);	
+			}
+			else if(czyGospodarcze==true){
+				for (int i=0;i<iloscGospodarczych;i++){
+					if(isNumeric(tZmienIloscGospodarczych[i].getText())) stanGospodarczych[i] += Double.parseDouble(tZmienIloscGospodarczych[i].getText());
+					tZmienIloscGospodarczych[i].setText("");
+				}
+				pokazTZmienGospodarcze(false);
+				pokazGospodarcze(true);	
+			}
+			else if(czySosy==true){
+				for (int i=0;i<iloscSosow;i++){
+					if(isNumeric(tZmienIloscSosow[i].getText())) stanSosow[i] += Double.parseDouble(tZmienIloscSosow[i].getText());
+					tZmienIloscSosow[i].setText("");
+				}
+				pokazTZmienSosy(false);
+				pokazSosy(true);
+			}
+			else if(czyNapoje==true){
+				for (int i=0;i<iloscNapoi;i++){
+					if(isNumeric(tZmienIloscNapoi[i].getText())) stanNapoi[i] += Double.parseDouble(tZmienIloscNapoi[i].getText());
+					tZmienIloscNapoi[i].setText("");
+				}
+				pokazTZmienNapoje(false);
+				pokazNapoje(true);
+			}
+			
+			ustawSkladniki();
+
+		}
+		/*else if (z==bRaport){
+			
+			int odp = JOptionPane.showConfirmDialog(null, "Czy na pewno chcesz wykonać raport?", "UWAGA!", JOptionPane.YES_NO_OPTION);
+			if (odp==JOptionPane.YES_OPTION){
+				try {
+					raport();
+				} catch (FileNotFoundException e1) {
+					e1.printStackTrace();
+				}	
+				JOptionPane.showMessageDialog(null, "Wykonano raport!");
+			}
+			else if (odp==JOptionPane.NO_OPTION){
+				JOptionPane.showMessageDialog(null, "NIE wykonano raportu!");
+			}
+			else if (odp==JOptionPane.CLOSED_OPTION){
+				JOptionPane.showMessageDialog(null, "NIE wykonano raportu!");
+			}
+		}*/
+		else if(z==bWczytajRaport){
+			JFileChooser jFileChooser = new JFileChooser();
+			jFileChooser.setCurrentDirectory(new File("C://Users/Łukasz/Desktop/OzdApp/Skladniki"));
+			
+			int result = jFileChooser.showOpenDialog(new JFrame());
+			
+			if (result == JFileChooser.APPROVE_OPTION) {
+				File selectedFile = jFileChooser.getSelectedFile();
+
+				try {
+		            @SuppressWarnings("resource")
+					BufferedReader br = new BufferedReader(new FileReader(selectedFile));
+		            String linia = null;
+		            while ((linia = br.readLine()) != null) {
+		                taWczytanyRaport.append(linia + "\n");
+		            }
+		        } catch (Exception e1) {
+		            System.err.println("Wystapil blad przy wczytywaniu danych");
+		            e1.printStackTrace();
+		        }	
+			
+			pokazWczytanyRaport(true);
+			}
+		}
+		else if(z==bWroc){
+			taWczytanyRaport.setText("");
+			pokazWczytanyRaport(false);
+		}
+		else if (z==bCofnij){							//klikniecie na Cofnij
+			foc = -1;
+			if(czySpozywcze==true){
+				pokazSpozywcze(false);
+				pokazTZmienSpozywcze(false);
+				bZmienStan.setVisible(false);
+				pokazGlowne(true);
+				czySpozywcze = false;
+			}
+			else if(czyGospodarcze==true){
+				pokazGospodarcze(false);
+				pokazTZmienGospodarcze(false);
+				bZmienStan.setVisible(false);
+				pokazGlowne(true);
+				czyGospodarcze = false;
+			}
+			else if(czySosy==true){
+				pokazSosy(false);
+				pokazTZmienSosy(false);
+				bZmienStan.setVisible(false);
+				pokazGlowne(true);
+				czySosy = false;
+			}
+			else if(czyNapoje==true){
+				pokazNapoje(false);
+				pokazTZmienNapoje(false);
+				bZmienStan.setVisible(false);
+				pokazGlowne(true);
+				czyNapoje = false;
+			}
+			
+			else {
+				for (int i=0;i<iloscSpozywczych;i++) tZmienIloscSpozywczych[i].setText("");
+				for (int i=0;i<iloscGospodarczych;i++) tZmienIloscGospodarczych[i].setText("");
+				for (int i=0;i<iloscSosow;i++) tZmienIloscSosow[i].setText("");
+				for (int i=0;i<iloscNapoi;i++) tZmienIloscNapoi[i].setText("");
+				
+				setVisible(false);
+				pokazWczytanyRaport(false);
+			}	
+		}
+		
+		for (int k=0; k<iloscSpozywczych;k++) if(z==tZmienIloscSpozywczych[k]) foc = k;
+		for (int k=0; k<iloscGospodarczych;k++) if(z==tZmienIloscGospodarczych[k]) foc = k;
+		for (int k=0; k<iloscSosow;k++) if(z==tZmienIloscSosow[k]) foc = k;
+		for (int k=0; k<iloscNapoi;k++) if(z==tZmienIloscNapoi[k]) foc = k;
+		
+
+		for (int i=0; i<12; i++){
+			if (z==klawiatura[i]){
+				if (czySpozywcze==true){
+					for (int j=0;j<iloscSpozywczych;j++){
+						if (foc==j) {
+							if (i>=0 && i<11) tZmienIloscSpozywczych[j].setText(tZmienIloscSpozywczych[j].getText() + liczby[i]);
+							else if (i==11 && tZmienIloscSpozywczych[j].getText().equals("")) tZmienIloscSpozywczych[j].setText(tZmienIloscSpozywczych[j].getText() + liczby[i]);
+						}
+					}
+				}
+				else if (czyGospodarcze==true){
+					for (int j=0;j<iloscGospodarczych;j++){
+						if (foc==j) {
+							if (i>=0 && i<11) tZmienIloscGospodarczych[j].setText(tZmienIloscGospodarczych[j].getText() + liczby[i]);
+							else if (i==11 && tZmienIloscGospodarczych[j].getText().equals("")) tZmienIloscGospodarczych[j].setText(tZmienIloscGospodarczych[j].getText() + liczby[i]);
+						}
+					}
+				}
+				else if (czySosy==true){
+					for (int j=0;j<iloscSosow;j++){
+						if (foc==j) {
+							if (i>=0 && i<11) tZmienIloscSosow[j].setText(tZmienIloscSosow[j].getText() + liczby[i]);
+							else if (i==11 && tZmienIloscSosow[j].getText().equals("")) tZmienIloscSosow[j].setText(tZmienIloscSosow[j].getText() + liczby[i]);
+						}
+					}
+				}
+				else if (czyNapoje==true){
+					for (int j=0;j<iloscNapoi;j++){
+						if (foc==j) {
+							if (i>=0 && i<11) tZmienIloscNapoi[j].setText(tZmienIloscNapoi[j].getText() + liczby[i]);
+							else if (i==11 && tZmienIloscNapoi[j].getText().equals("")) tZmienIloscNapoi[j].setText(tZmienIloscNapoi[j].getText() + liczby[i]);
+						}
+					}
+				}
+			}
+		}
+		if (z==klawiatura[12]){
+			if (czySpozywcze==true){
+				for (int j=0;j<iloscSpozywczych;j++){
+					if (foc==j) tZmienIloscSpozywczych[j].setText("");
+				}
+			}
+			else if (czyGospodarcze==true){
+				for (int j=0;j<iloscGospodarczych;j++){
+					if (foc==j) tZmienIloscGospodarczych[j].setText("");
+				}
+			}
+			else if (czySosy==true){
+				for (int j=0;j<iloscSosow;j++){
+					if (foc==j) tZmienIloscSosow[j].setText("");
+				}
+			}
+			else if (czyNapoje==true){
+				for (int j=0;j<iloscNapoi;j++){
+					if (foc==j) tZmienIloscNapoi[j].setText("");
+				}
+			}
+		}
+	}
+	
+	
+
+
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+}
+
+import java.awt.Font;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+
+
+class HistoriaZamowien extends JDialog implements MouseListener {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private JTextArea taNotatnik, taWczytanyRaport;
+	private JScrollPane spScroll, spWczytany;
+	private JLabel lZysk, lPokazZysk, bg;
+	private JButton bCofnij, bWczytajRaport, bWroc;
+	private int sprzedanePotrawy[] = new int [10];
+
+	public HistoriaZamowien(JFrame owner){
+		
+		super(owner, "OzdApp", true);
+		setSize(1280,800);
+		setLayout(null);
+		setUndecorated(true);
+		
+		taNotatnik = new JTextArea();
+		taNotatnik.setWrapStyleWord(true);
+		taNotatnik.setEditable(false);
+		taNotatnik.setFont(new Font("Sans-serif", Font.CENTER_BASELINE, 20));
+		spScroll = new JScrollPane(taNotatnik);
+		spScroll.setBounds(20, 20, 600, 760);
+		add(spScroll);
+		
+		taWczytanyRaport = new JTextArea();
+		taWczytanyRaport.setWrapStyleWord(true);
+		taWczytanyRaport.setEditable(false);
+		taWczytanyRaport.setFont(new Font("Sans-serif", Font.CENTER_BASELINE, 20));
+		spWczytany = new JScrollPane(taWczytanyRaport);
+		spWczytany.setBounds(20, 20, 600, 760);
+		spWczytany.setVisible(false);
+		add(spWczytany);
+		
+		lZysk = new JLabel("Obrót:");
+		lZysk.setBounds(640, 10, 100, 50);
+		lZysk.setForeground(new java.awt.Color(250, 250, 250));
+		lZysk.setFont(new Font("Amatic SC", Font.BOLD, 40));
+		add(lZysk);
+		
+		lPokazZysk = new JLabel("0.0");
+		lPokazZysk.setBounds(740, 10, 100, 50);
+		lPokazZysk.setForeground(new java.awt.Color(250, 250, 250));
+		lPokazZysk.setFont(new Font("Amatic SC", Font.BOLD, 40));
+		add(lPokazZysk);
+		
+		/*ImageIcon rap = new ImageIcon("grafika/bRaport.jpg");
+		bRaport = new JButton(rap);
+		bRaport.setBounds(700, 242, 500, 166);
+		bRaport.addMouseListener(this);
+		add(bRaport);*/
+		
+		ImageIcon wrap = new ImageIcon("grafika/bWczytajRaport.jpg");
+		bWczytajRaport = new JButton(wrap);
+		bWczytajRaport.setBounds(700, 428, 500, 166);
+		bWczytajRaport.setFont(new Font("SansSerif",Font.BOLD, 40));
+		bWczytajRaport.addMouseListener(this);
+		add(bWczytajRaport);
+		
+		ImageIcon wroc = new ImageIcon("grafika/bWroc.jpg");
+		bWroc = new JButton(wroc);
+		bWroc.setBounds(700, 428, 500, 166);
+		bWroc.setFont(new Font("SansSerif",Font.BOLD, 40));
+		bWroc.setVisible(false);
+		bWroc.addMouseListener(this);
+		add(bWroc);
+		
+		ImageIcon cof = new ImageIcon("grafika/bCofnij.jpg");
+		bCofnij = new JButton(cof);
+		bCofnij.setBounds(700, 614, 500, 166);
+		bCofnij.addMouseListener(this);
+		add(bCofnij);
+		
+		bg=new JLabel(new ImageIcon("grafika/tlo.jpg"));
+		bg.setBounds(0,0,1280,800);
+		bg.setOpaque(true);
+		add(bg);
+		
+	}	
+	
+	public double zaokragl(double x){
+		x *= 100;
+        x = Math.round(x);
+        return x /= 100;
+	}
+	
+	public void setSprzedanePotrawy(int x, int y){
+		sprzedanePotrawy[y] = x;
+	}
+	
+	public void setPokazZysk(double x){
+		lPokazZysk.setText(String.valueOf(zaokragl(x)));
+	}
+	
+	public void dodajZam(JTextArea zam){
+		
+		Date currentDate = new Date();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+		String Dataxd = dateFormat.format(currentDate);
+		taNotatnik.append("Data: " + Dataxd + "\n");
+		for (String line : zam.getText().split("\\n")) {
+			taNotatnik.append(line + "\n"); 
+		}
+		taNotatnik.append("-------------------------------------------------------------------------------\n");
+	}
+	
+	public void setNotatnik(String x){
+		taNotatnik.append(x + "\n");
+	}
+	
+	public void raport() throws FileNotFoundException{
+		
+		Date currentDate = new Date();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+		//SimpleDateFormat dateFormat2 = new SimpleDateFormat("HH:mm"); //zakomentowane linie pozwalaly na dodanie godziny do tytułu raportu
+		String dateString = dateFormat.format(currentDate);
+		//String dateString2 = dateFormat2.format(currentDate);
+		String d = dateString.replace(".", "-");
+		//String g = dateString2.replace(":", ".");
+		
+		String tytul = "Zamowienia/Zamowienia " + d + ".txt"; //jak bedzie dodawana godzina to dodac po "d": + " " + g
+		
+		PrintWriter zapis = new PrintWriter(tytul);
+		zapis.println("Raport Zamówień z dnia " + d + "\n\n");
+		for (String line : taNotatnik.getText().split("\\n")) zapis.println(line);
+		zapis.println("\n\n");
+		zapis.println("Obrót: " + lPokazZysk.getText() + " zł\n");
+		
+		zapis.println("Małe burrito: " + sprzedanePotrawy[0] + " szt.");
+		zapis.println("Duże burrito: " + sprzedanePotrawy[1] + " szt.");
+		zapis.println("Małe quritto: " + sprzedanePotrawy[2] + " szt.");
+		zapis.println("Duże quritto: " + sprzedanePotrawy[3] + " szt.");
+		zapis.println("Mała quesadilla: " + sprzedanePotrawy[4] + " szt.");
+		zapis.println("Duża quesadilla: " + sprzedanePotrawy[5] + " szt.");
+		zapis.println("Małe frytki: " + sprzedanePotrawy[6] + " szt.");
+		zapis.println("Duże frytki: " + sprzedanePotrawy[7] + " szt.");
+		zapis.println("Hamburger wołowy: " + sprzedanePotrawy[8] + " szt.");
+		zapis.println("Kurczakoburger: " + sprzedanePotrawy[9] + " szt.");
+		
+	    zapis.close();
+		
+	}
+	
+	public JTextArea getNotatnik(){
+		return taNotatnik;
+	}
+	
+	public double getZysk(){
+		return Double.parseDouble(lPokazZysk.getText());
+	}
+	
+	public void pokazWczytanyRaport(boolean x){
+		spScroll.setVisible(!x);
+		spWczytany.setVisible(x);
+		bWczytajRaport.setVisible(!x);
+		bWroc.setVisible(x);
+	}
+	
+	
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		
+		
+	}
+	
+	
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		Object z = e.getSource();
+		
+		
+		/*if (z==bRaport){
+					
+			int odp = JOptionPane.showConfirmDialog(null, "Czy na pewno chcesz wykonać raport?", "UWAGA!", JOptionPane.YES_NO_OPTION);
+			if (odp==JOptionPane.YES_OPTION){
+				try {
+					raport();
+				} catch (FileNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}	
+				JOptionPane.showMessageDialog(null, "Wykonano raport!");
+			}
+			else if (odp==JOptionPane.NO_OPTION){
+				JOptionPane.showMessageDialog(null, "NIE wykonano raportu!");
+			}
+			else if (odp==JOptionPane.CLOSED_OPTION){
+				JOptionPane.showMessageDialog(null, "NIE wykonano raportu!");
+			}
+							
+		}*/
+		if (z==bWczytajRaport){
+			JFileChooser jFileChooser = new JFileChooser();
+			jFileChooser.setCurrentDirectory(new File("C://Users/Łukasz/Desktop/OzdApp/Zamowienia/"));
+			
+			int result = jFileChooser.showOpenDialog(new JFrame());
+			
+			if (result == JFileChooser.APPROVE_OPTION) {
+				File selectedFile = jFileChooser.getSelectedFile();
+
+				try {
+		            @SuppressWarnings("resource")
+					BufferedReader br = new BufferedReader(new FileReader(selectedFile));
+		            String linia = null;
+		            while ((linia = br.readLine()) != null) {
+		                taWczytanyRaport.append(linia + "\n");
+		            }
+		        } catch (Exception e1) {
+		            System.err.println("Wystapil blad przy wczytywaniu danych");
+		            e1.printStackTrace();
+		        }	
+			
+			pokazWczytanyRaport(true);
+			}
+		}
+		else if (z==bWroc){							//klikniecie na Wroc, wraca z wczytanego raportu
+			taWczytanyRaport.setText("");
+			pokazWczytanyRaport(false);
+		}
+		else if (z==bCofnij){							//klikniecie na Cofnij
+			taWczytanyRaport.setText("");
+			pokazWczytanyRaport(false);
+			setVisible(false);
+		}
+		
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+}
+
+import java.awt.Font;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.ArrayList;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+
+
+class Statystyka extends JDialog implements MouseListener {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	private JComboBox<String> cOD, cDO, cRodzaj;
+	private JButton bCofnij, bOK;
+	private JLabel lOkresOd, lDo, lRodzaj, lNazwa, lNazwa2, lSumka, lSumka2, lSr, lSr2, bg;
+	private JLabel lProdukt[] = new JLabel[28];
+	private JLabel lSuma[] = new JLabel[28];
+	private JLabel lSrednia[] = new JLabel[28];
+	
+	private String spozywcze[] = {"Bułki Maślane", "Tortilla 25cm", "Tortilla 30cm", "Frytki", "Ser w plastrach", "Ser tarty", "Mięso wieprzowo-wołowe",
+			"Pierś z kurczaka", "Mięso wołowe burger", "Mix sałat", "Salsa Łagodna", "Salsa Pikantna", "Kukurydza", "Fasola", "Ogórek kiszony", "Ryż", "Olej", 
+			"Jogurt naturalny", "Mleko", "Sól", "Cukier", "Sos Dawtona"};
+	private String gospodarcze[] = {"Folia aluminiowa", "Folia strecz", "Pudełko do burgerów", "Pudełko do quritto", 
+			"Pudełko do Frytek Male", "Pudełko do Frytek Duze", "Kapsy", "Kubeczek do kawy", "Wieczko do kawy", "Torebki", "Chusteczki", "Papier rolka zielony", 
+			"Widelczyki", "Rękawiczki jednorazowe", "Worki na śmieci", "Mydło w płynie", "Płyn do mycia naczyń", "Płyn do szyb", "Baktosan", "Gąbka do zmywania"};
+	private String sosy[] = {"MadDog160", "MadDog600", "MadDog750", "Czosnkowy", "Serowe Chili", "Ketchup", "Hamburgerowy", "Arabski Pikantny",
+			"Tysiąca Wysp", "Amerykański", "Salsa Mexicana", "Gyros", "Barbecue"};
+	private String napoje[] = {"Woda gazowana", "Woda niegazowana", "Coca-cola", "Coca-cola Zero", "Pepsi", "Tymbark", "Energetyk Black", "Maślanka"};
+	private String potrawy[] = {"Małe Burrito", "Duże Burrito", "Małe Quritto", "Duże Quritto", "Mała Quesadilla", "Duża Quesadilla", "Małe Frytki", "Duże Frytki",
+			"Hamburger Wołowy", "Kurczako Burger"};
+	//private boolean czySpozywcze = false, czyGospodarcze = false, czySosy = false, czyNapoje = false, czyPotrawy = false;
+	
+	private int x;
+	
+	private static int iloscSpozywczych = 22;
+	private String daneSpozywcze[][];
+	private double daneDblSpozywcze[][];
+	private ArrayList<String> linieSpozywcze = new ArrayList<String>();
+	
+	private static int iloscGospodarczych = 20;
+	private String daneGospodarcze[][];
+	private double daneDblGospodarcze[][];
+	private ArrayList<String> linieGospodarcze = new ArrayList<String>();
+	
+	private static int iloscSosow = 13;
+	private String daneSosy[][];
+	private double daneDblSosy[][];
+	private ArrayList<String> linieSosy = new ArrayList<String>();
+	
+	private static int iloscNapoi = 8;
+	private String daneNapoje[][];
+	private int daneIntNapoje[][];
+	private ArrayList<String> linieNapoje = new ArrayList<String>();
+	
+	private static int iloscPotraw = 10;
+	private String danePotrawy[][];
+	private int daneIntPotrawy[][];
+	private ArrayList<String> liniePotrawy = new ArrayList<String>();
+	
+	private static int iloscObrot = 1;
+	private String daneObrot[][];
+	private double daneDblObrot[][];
+	private ArrayList<String> linieObrot = new ArrayList<String>();
+	
+	public Statystyka(JFrame owner){
+		
+		super(owner, "OzdApp", true);
+		setSize(1280,800);
+		setLayout(null);
+		setUndecorated(true);
+		//---------Spozywcze
+		try {
+            @SuppressWarnings("resource")
+			BufferedReader br = new BufferedReader(new FileReader("Statystyka/DaneStatSpozywcze.txt"));
+            String linia = null;
+            while ((linia = br.readLine()) != null) {
+                linieSpozywcze.add(linia);
+            }
+        } catch (Exception e1) {
+            System.err.println("Wystapil blad przy wczytywaniu danych");
+            e1.printStackTrace();
+        }
+		
+		x=linieSpozywcze.size(); //OBLICZENIE ILE JEST WIERSZY W PLIKU!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		
+		daneSpozywcze = new String [x][iloscSpozywczych+1];
+		for (int i=0; i<x;i++){
+			daneSpozywcze[i] = linieSpozywcze.get(i).split(" ");
+		}
+		
+		daneDblSpozywcze = new double[x][iloscSpozywczych];
+		for (int i=0;i<x;i++){
+			for (int j=0;j<iloscSpozywczych; j++){
+				daneDblSpozywcze[i][j] = zaokragl(Double.parseDouble(daneSpozywcze[i][j+1]));
+			}
+		}
+		
+		//----------Gospodarcze
+		try {
+            @SuppressWarnings("resource")
+			BufferedReader br = new BufferedReader(new FileReader("Statystyka/DaneStatGospodarcze.txt"));
+            String linia = null;
+            while ((linia = br.readLine()) != null) {
+                linieGospodarcze.add(linia);
+            }
+        } catch (Exception e1) {
+            System.err.println("Wystapil blad przy wczytywaniu danych");
+            e1.printStackTrace();
+        }
+		
+		daneGospodarcze = new String [x][iloscGospodarczych+1];
+		for (int i=0; i<x;i++){
+			daneGospodarcze[i] = linieGospodarcze.get(i).split(" ");
+		}
+		
+		daneDblGospodarcze = new double[x][iloscGospodarczych];
+		for (int i=0;i<x;i++){
+			for (int j=0;j<iloscGospodarczych; j++){
+				daneDblGospodarcze[i][j] = zaokragl(Double.parseDouble(daneGospodarcze[i][j+1]));
+			}
+		}
+		
+		//------------Sosy
+		try {
+            @SuppressWarnings("resource")
+			BufferedReader br = new BufferedReader(new FileReader("Statystyka/DaneStatSosy.txt"));
+            String linia = null;
+            while ((linia = br.readLine()) != null) {
+                linieSosy.add(linia);
+            }
+        } catch (Exception e1) {
+            System.err.println("Wystapil blad przy wczytywaniu danych");
+            e1.printStackTrace();
+        }
+		
+		daneSosy = new String [x][iloscSosow+1];
+		for (int i=0; i<x;i++){
+			daneSosy[i] = linieSosy.get(i).split(" ");
+		}
+		
+		daneDblSosy = new double[x][iloscSosow];
+		for (int i=0;i<x;i++){
+			for (int j=0;j<iloscSosow; j++){
+				daneDblSosy[i][j] = zaokragl(Double.parseDouble(daneSosy[i][j+1]));
+			}
+		}
+		
+		//--------------Napoje
+		try {
+            @SuppressWarnings("resource")
+			BufferedReader br = new BufferedReader(new FileReader("Statystyka/DaneStatNapoje.txt"));
+            String linia = null;
+            while ((linia = br.readLine()) != null) {
+                linieNapoje.add(linia);
+            }
+        } catch (Exception e1) {
+            System.err.println("Wystapil blad przy wczytywaniu danych");
+            e1.printStackTrace();
+        }
+		
+		daneNapoje = new String [x][iloscNapoi+1];
+		for (int i=0; i<x;i++){
+			daneNapoje[i] = linieNapoje.get(i).split(" ");
+		}
+		
+		daneIntNapoje = new int[x][iloscNapoi];
+		for (int i=0;i<x;i++){
+			for (int j=0;j<iloscNapoi; j++){
+				daneIntNapoje[i][j] = Integer.parseInt(daneNapoje[i][j+1]);
+			}
+		}
+		
+		//---------------Potrawy
+		try {
+            @SuppressWarnings("resource")
+			BufferedReader br = new BufferedReader(new FileReader("Statystyka/DaneStatPotrawy.txt"));
+            String linia = null;
+            while ((linia = br.readLine()) != null) {
+                liniePotrawy.add(linia);
+            }
+        } catch (Exception e1) {
+            System.err.println("Wystapil blad przy wczytywaniu danych");
+            e1.printStackTrace();
+        }
+
+		danePotrawy = new String [x][iloscPotraw+1];
+		for (int i=0; i<x;i++){
+			danePotrawy[i] = liniePotrawy.get(i).split(" ");
+		}
+		
+		daneIntPotrawy = new int[x][iloscPotraw];
+		for (int i=0;i<x;i++){
+			for (int j=0;j<iloscPotraw; j++){
+				daneIntPotrawy[i][j] = Integer.parseInt(danePotrawy[i][j+1]);
+			}
+		}
+		
+		//-------------Obrot
+		try {
+            @SuppressWarnings("resource")
+			BufferedReader br = new BufferedReader(new FileReader("Statystyka/DaneStatObrot.txt"));
+            String linia = null;
+            while ((linia = br.readLine()) != null) {
+                linieObrot.add(linia);
+            }
+        } catch (Exception e1) {
+            System.err.println("Wystapil blad przy wczytywaniu danych");
+            e1.printStackTrace();
+        }
+		daneObrot = new String [x][iloscObrot+1];
+		for (int i=0; i<x;i++){
+			daneObrot[i] = linieObrot.get(i).split(" ");
+		}
+		
+		daneDblObrot = new double[x][iloscObrot];
+		for (int i=0;i<x;i++){
+			for (int j=0;j<iloscObrot; j++){
+				daneDblObrot[i][j] = zaokragl(Double.parseDouble(daneObrot[i][j+1]));
+			}
+		}
+		
+		//--------------------------------------------------------------------------------------------------------
+		
+		
+		
+		
+		lOkresOd = new JLabel("Okres od:");
+		lOkresOd.setBounds(70, 20, 80, 30);
+		lOkresOd.setForeground(new java.awt.Color(250, 250, 250));
+		lOkresOd.setFont(new Font("Amatic SC", Font.BOLD, 25));
+		add(lOkresOd);
+		
+		cOD = new JComboBox<String>();
+		cOD.setBounds(150, 20, 100, 30);
+		for (int i=0; i<x;i++) cOD.addItem(daneSpozywcze[i][0]);
+		add(cOD);
+		
+		lDo = new JLabel("do:");
+		lDo.setBounds(260, 20, 30, 30);
+		lDo.setForeground(new java.awt.Color(250, 250, 250));
+		lDo.setFont(new Font("Amatic SC", Font.BOLD, 25));
+		add(lDo);
+		
+		cDO = new JComboBox<String>();
+		cDO.setBounds(290, 20, 100, 30);
+		for (int i=0; i<x;i++) cDO.addItem(daneSpozywcze[i][0]);
+		add(cDO);
+		
+		lRodzaj = new JLabel("Rodzaj:");
+		lRodzaj.setBounds(400, 20, 70, 30);
+		lRodzaj.setForeground(new java.awt.Color(250, 250, 250));
+		lRodzaj.setFont(new Font("Amatic SC", Font.BOLD, 25));
+		add(lRodzaj);
+		
+		cRodzaj = new JComboBox<String>();
+		cRodzaj.setBounds(470, 20, 100, 30);
+		cRodzaj.addItem("Spożywcze");
+		cRodzaj.addItem("Gospodarcze");
+		cRodzaj.addItem("Sosy");
+		cRodzaj.addItem("Napoje");
+		cRodzaj.addItem("Potrawy");
+		cRodzaj.addItem("Obrót");
+		add(cRodzaj);
+		
+		lNazwa = new JLabel("Nazwa");
+		lNazwa.setBounds(20, 60, 70, 40);
+		lNazwa.setForeground(new java.awt.Color(250, 250, 250));
+		lNazwa.setFont(new Font("Amatic SC", Font.BOLD, 18));
+		lNazwa.setVisible(false);
+		add(lNazwa);
+		
+		lNazwa2 = new JLabel("Nazwa");
+		lNazwa2.setBounds(410, 60, 70, 40);
+		lNazwa2.setForeground(new java.awt.Color(250, 250, 250));
+		lNazwa2.setFont(new Font("Amatic SC", Font.BOLD, 18));
+		lNazwa2.setVisible(false);
+		add(lNazwa2);
+		
+		lSumka = new JLabel("Suma");
+		lSumka.setBounds(240, 60, 70, 40);
+		lSumka.setForeground(new java.awt.Color(250, 250, 250));
+		lSumka.setFont(new Font("Amatic SC", Font.BOLD, 18));
+		lSumka.setVisible(false);
+		add(lSumka);
+		
+		lSumka2 = new JLabel("Suma");
+		lSumka2.setBounds(630, 60, 70, 40);
+		lSumka2.setForeground(new java.awt.Color(250, 250, 250));
+		lSumka2.setFont(new Font("Amatic SC", Font.BOLD, 18));
+		lSumka2.setVisible(false);
+		add(lSumka2);
+		
+		lSr = new JLabel("Średnia");
+		lSr.setBounds(315, 60, 70, 40);
+		lSr.setForeground(new java.awt.Color(250, 250, 250));
+		lSr.setFont(new Font("Amatic SC", Font.BOLD, 18));
+		lSr.setVisible(false);
+		add(lSr);
+		
+		lSr2 = new JLabel("Średnia");
+		lSr2.setBounds(705, 60, 70, 40);
+		lSr2.setForeground(new java.awt.Color(250, 250, 250));
+		lSr2.setFont(new Font("Amatic SC", Font.BOLD, 18));
+		lSr2.setVisible(false);
+		add(lSr2);
+		
+		for (int i=0;i<28; i++){
+			int pomx=0;
+			int pomy=0;
+			if (i>14) {pomx=390;pomy=-675;}
+			lProdukt[i] = new JLabel("");
+			lProdukt[i].setBounds(20+pomx, pomy+100+(i*45), 220, 45);
+			lProdukt[i].setForeground(new java.awt.Color(250, 250, 250));
+			lProdukt[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lProdukt[i]);
+			
+			
+			lSuma[i] = new JLabel("");
+			lSuma[i].setBounds(240+pomx, pomy+100+(i*45), 80, 45);
+			lSuma[i].setForeground(new java.awt.Color(250, 250, 250));
+			lSuma[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lSuma[i]);
+			
+			lSrednia[i] = new JLabel("");
+			lSrednia[i].setBounds(320+pomx, pomy+100+(i*45), 80, 45);
+			lSrednia[i].setForeground(new java.awt.Color(250, 250, 250));
+			lSrednia[i].setFont(new Font("Amatic SC", Font.BOLD, 30));
+			add(lSrednia[i]);
+			
+			
+		}
+		
+		ImageIcon ok = new ImageIcon("grafika/bOK.jpg");
+		bOK = new JButton(ok);
+		bOK.setBounds(760, 392, 500, 166);
+		bOK.addMouseListener(this);
+		add(bOK);
+		
+		ImageIcon cof = new ImageIcon("grafika/bCofnij.jpg");
+		bCofnij = new JButton(cof);
+		bCofnij.setBounds(760, 578, 500, 166);
+		bCofnij.addMouseListener(this);
+		add(bCofnij);
+		
+		bg=new JLabel(new ImageIcon("grafika/tlo.jpg"));
+		bg.setBounds(0,0,1280,800);
+		bg.setOpaque(true);
+		add(bg);
+	}
+	
+	public double zaokragl(double x){
+		x *= 100;
+        x = Math.round(x);
+        return x /= 100;
+	}
+	
+	public void pokazNaglowki(boolean x){
+		lNazwa.setVisible(x);
+		lSumka.setVisible(x);
+		lSr.setVisible(x);
+	}
+	
+	public void pokazNaglowkiDod(boolean x){
+		lNazwa2.setVisible(x);
+		lSumka2.setVisible(x);
+		lSr2.setVisible(x);
+	}
+	
+	
+	
+	
+	@Override
+	public void mouseClicked(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		Object z = e.getSource();
+		
+		
+		
+		if (z==bOK){
+			
+			
+			int od = cOD.getSelectedIndex();
+			int dodo = cDO.getSelectedIndex();
+			double ileDoSr = dodo-od+1;
+			
+			
+			//----------------------------------------SPOZYWCZE
+			if (cRodzaj.getSelectedIndex()==0){
+				
+				double daneSum[] = new double[iloscSpozywczych];
+				for (int i=od;i<=dodo;i++){
+					for(int j=0;j<iloscSpozywczych;j++) {
+						daneSum[j]+=daneDblSpozywcze[i][j];
+						daneSum[j]=zaokragl(daneSum[j]);
+					}
+				}
+				
+				double daneSrednia[] = new double[iloscSpozywczych];
+				for (int i=0;i<iloscSpozywczych;i++) daneSrednia[i] = zaokragl(daneSum[i]/ileDoSr);
+				
+				for (int j=0; j<28;j++){
+					lProdukt[j].setText("");
+					lSuma[j].setText("");
+					lSrednia[j].setText("");
+				}
+				for (int i=0;i<iloscSpozywczych;i++){
+					lProdukt[i].setText(spozywcze[i]);
+					lSuma[i].setText(String.valueOf(daneSum[i]));
+					lSrednia[i].setText(String.valueOf(daneSrednia[i]));
+				}
+				pokazNaglowkiDod(true);
+			}
+			
+			//---------------GOSPODARCZE
+			else if (cRodzaj.getSelectedIndex()==1){
+				
+				double daneSum[] = new double[iloscGospodarczych];
+				for (int i=od;i<=dodo;i++){
+					for(int j=0;j<iloscGospodarczych;j++) {
+						daneSum[j]+=daneDblGospodarcze[i][j];
+						daneSum[j]=zaokragl(daneSum[j]);
+					}
+				}
+				
+				double daneSrednia[] = new double[iloscGospodarczych];
+				for (int i=0;i<iloscGospodarczych;i++) {
+					daneSrednia[i] = zaokragl(daneSum[i]/ileDoSr);
+				}
+				
+				for (int j=0; j<28;j++){
+					lProdukt[j].setText("");
+					lSuma[j].setText("");
+					lSrednia[j].setText("");
+				}
+				for (int i=0;i<iloscGospodarczych;i++){
+					lProdukt[i].setText(gospodarcze[i]);
+					lSuma[i].setText(String.valueOf(daneSum[i]));
+					lSrednia[i].setText(String.valueOf(daneSrednia[i]));
+				}
+				pokazNaglowkiDod(true);
+			}
+			//-----------------------------------------------SOSY
+			else if (cRodzaj.getSelectedIndex()==2){
+				
+				double daneSum[] = new double[iloscSosow];
+				for (int i=od;i<=dodo;i++){
+					for(int j=0;j<iloscSosow;j++) {
+						daneSum[j]+=daneDblSosy[i][j]; 
+						daneSum[j]=zaokragl(daneSum[j]);}
+				}
+				
+				double daneSrednia[] = new double[iloscSosow];
+				for (int i=0;i<iloscSosow;i++) daneSrednia[i] = zaokragl(daneSum[i]/ileDoSr);
+				
+				for (int j=0; j<28;j++){
+					lProdukt[j].setText("");
+					lSuma[j].setText("");
+					lSrednia[j].setText("");
+				}
+				for (int i=0;i<iloscSosow;i++){
+					lProdukt[i].setText(sosy[i]);
+					lSuma[i].setText(String.valueOf(daneSum[i]));
+					lSrednia[i].setText(String.valueOf(daneSrednia[i]));
+				}
+				pokazNaglowkiDod(false);
+			}
+			//------------------------------------------NAPOJE
+			else if (cRodzaj.getSelectedIndex()==3){
+				
+				int daneSum[] = new int[iloscNapoi];
+				for (int i=od;i<=dodo;i++){
+					for(int j=0;j<iloscNapoi;j++) daneSum[j]+=daneIntNapoje[i][j];
+				}
+				
+				double daneSrednia[] = new double[iloscNapoi];
+				for (int i=0;i<iloscNapoi;i++) daneSrednia[i] = zaokragl(daneSum[i]/ileDoSr);
+				
+				for (int j=0; j<28;j++){
+					lProdukt[j].setText("");
+					lSuma[j].setText("");
+					lSrednia[j].setText("");
+				}
+				for (int i=0;i<iloscNapoi;i++){
+					lProdukt[i].setText(napoje[i]);
+					lSuma[i].setText(String.valueOf(daneSum[i]));
+					lSrednia[i].setText(String.valueOf(daneSrednia[i]));
+				}
+				pokazNaglowkiDod(false);
+			}
+			//-------------------------------------------------POTRAWY
+			else if (cRodzaj.getSelectedIndex()==4){
+				
+				int daneSum[] = new int[iloscPotraw];
+				for (int i=od;i<=dodo;i++){
+					for(int j=0;j<iloscPotraw;j++) daneSum[j]+=daneIntPotrawy[i][j];
+				}
+				
+				double daneSrednia[] = new double[iloscPotraw];
+				for (int i=0;i<iloscPotraw;i++) daneSrednia[i] = zaokragl(daneSum[i]/ileDoSr);
+				
+				for (int j=0; j<28;j++){
+					lProdukt[j].setText("");
+					lSuma[j].setText("");
+					lSrednia[j].setText("");
+				}
+				for (int i=0;i<iloscPotraw;i++){
+					lProdukt[i].setText(potrawy[i]);
+					lSuma[i].setText(String.valueOf(daneSum[i]));
+					lSrednia[i].setText(String.valueOf(daneSrednia[i]));
+				}
+				pokazNaglowkiDod(false);
+			}
+			//------------------------------------------OBROT
+			else if (cRodzaj.getSelectedIndex()==5){
+				
+				double daneSum[] = new double[iloscObrot];
+				for (int i=od;i<=dodo;i++){
+					for(int j=0;j<iloscObrot;j++) {
+						daneSum[j]+=daneDblObrot[i][j];
+						daneSum[j]=zaokragl(daneSum[j]);
+					}
+				}
+				
+				double daneSrednia[] = new double[iloscObrot];
+				for (int i=0;i<iloscObrot;i++) daneSrednia[i] = zaokragl(daneSum[i]/ileDoSr);
+				
+				for (int j=0; j<28;j++){
+					lProdukt[j].setText("");
+					lSuma[j].setText("");
+					lSrednia[j].setText("");
+				}
+					lProdukt[0].setText("Obrót pieniężny");
+					lSuma[0].setText(String.valueOf(daneSum[0]));
+					lSrednia[0].setText(String.valueOf(daneSrednia[0]));
+					pokazNaglowkiDod(false);
+			}
+			pokazNaglowki(true);
+			
+		}
+		else if (z==bCofnij){							//klikniecie na Cofnij
+			setVisible(false);
+		}
+		
+	}
+	
+	@Override
+	public void mouseReleased(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	} 
+	
+}
+
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class WatekBackup implements Runnable {
+	 
+		private Magazyn mag;
+		private HistoriaZamowien his;
+		
+		public void setMag(Magazyn x){
+			mag = x;
+		}
+		
+		public void setHisZam(HistoriaZamowien x){
+			his = x;
+		}
+		
+	    @Override
+	    public void run() {
+	        while(true) {
+	            
+	            try {
+	                //usypiamy wątek na 1h
+	                Thread.sleep(3600000);  
+	            	//Thread.sleep(60000);
+	            } catch (InterruptedException e) {
+	                e.printStackTrace();
+	            }
+	            
+	            
+	            Date currentDate = new Date();
+	    		SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+	    		SimpleDateFormat dateFormat2 = new SimpleDateFormat("HH:mm");
+	    		String dateString = dateFormat.format(currentDate);
+	    		String dateString2 = dateFormat2.format(currentDate);
+	    		String d = dateString.replace(".", "-");
+	    		String g = dateString2.replace(":", ".");
+	    		
+	    		String tytul = "backup/Backup z " + d + " " + g + ".txt";
+	    		
+	    		PrintWriter zapis;
+				try {
+					zapis = new PrintWriter(tytul);
+					for (int i=0;i<mag.getIloscSpozywczych();i++){
+						if(i==(mag.getIloscSpozywczych()-1)) zapis.print(mag.getSpozywczy(i));
+						else zapis.print(mag.getSpozywczy(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscGospodarczych();i++){
+						if(i==(mag.getIloscGospodarczych()-1)) zapis.print(mag.getGospodarczy(i));
+						else zapis.print(mag.getGospodarczy(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscSosow();i++){
+						if(i==(mag.getIloscSosow()-1)) zapis.print(mag.getSos(i));
+						else zapis.print(mag.getSos(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscNapoi();i++){
+						if(i==(mag.getIloscNapoi()-1)) zapis.print(mag.getNapoj(i));
+						else zapis.print(mag.getNapoj(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscSpozywczych();i++){
+						if(i==(mag.getIloscSpozywczych()-1)) zapis.print(mag.getZuzyteSpozywcze(i));
+						else zapis.print(mag.getZuzyteSpozywcze(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscGospodarczych();i++){
+						if(i==(mag.getIloscGospodarczych()-1)) zapis.print(mag.getZuzyteGospodarcze(i));
+						else zapis.print(mag.getZuzyteGospodarcze(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscSosow();i++){
+						if(i==(mag.getIloscSosow()-1)) zapis.print(mag.getZuzyteSosy(i));
+						else zapis.print(mag.getZuzyteSosy(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscNapoi();i++){
+						if(i==(mag.getIloscNapoi()-1)) zapis.print(mag.getZuzyteNapoje(i));
+						else zapis.print(mag.getZuzyteNapoje(i)+" ");
+					}
+					zapis.println("");
+					for (int i=0;i<mag.getIloscPotraw();i++){
+						if(i==7) zapis.print(mag.getSprzedanePotrawy(i));
+						else zapis.print(mag.getSprzedanePotrawy(i)+" ");
+					}
+					zapis.println("");
+					
+					for (String line : his.getNotatnik().getText().split("\\n")) zapis.println(line);
+					zapis.println("Zysk: " + his.getZysk() + " zł");
+					
+					zapis.close();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				}
+	    		
+	            
+	            
+	        }
+	    }
+}
